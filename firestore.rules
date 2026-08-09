@@ -1,0 +1,97 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ----------------------------------------------------
+    // SECURITY RULE HELPER FUNCTIONS
+    // ----------------------------------------------------
+
+    // 1. Is user signed in via Firebase Authentication
+    function isSignedIn() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    // 2. Is user the Organizer of the specific Yatra
+    function isOrganizer(yatraId) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/yatras/$(yatraId)).data.organizerId == request.auth.uid;
+    }
+
+    // 3. Is user an active Sahayak in yatras/{yatraId}/staff/{uid}
+    function isSahayak(yatraId) {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/yatras/$(yatraId)/staff/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/yatras/$(yatraId)/staff/$(request.auth.uid)).data.role == "sahayak" &&
+        get(/databases/$(database)/documents/yatras/$(yatraId)/staff/$(request.auth.uid)).data.status == "active";
+    }
+
+    // 4. Has access (either Organizer or active Sahayak)
+    function hasYatraAccess(yatraId) {
+      return isOrganizer(yatraId) || isSahayak(yatraId);
+    }
+
+    // ----------------------------------------------------
+    // 1. USERS COLLECTION: users/{uid}
+    // Only user profile data. No global role stored here.
+    // ----------------------------------------------------
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    // ----------------------------------------------------
+    // 2. YATRAS COLLECTION: yatras/{yatraId}
+    // ----------------------------------------------------
+    match /yatras/{yatraId} {
+      // User can create Yatra only if they assign themselves as organizer
+      allow create: if isSignedIn() && request.resource.data.organizerId == request.auth.uid;
+      
+      // Organizer and active Sahayaks can read the Yatra
+      allow read: if isSignedIn() && (resource.data.organizerId == request.auth.uid || isSahayak(yatraId));
+      
+      // Only the Organizer can update (and cannot change organizerId) or delete
+      allow update: if isOrganizer(yatraId) && request.resource.data.organizerId == resource.data.organizerId;
+      allow delete: if isOrganizer(yatraId);
+
+      // --------------------------------------------------
+      // Subcollection: Members -> yatras/{yatraId}/members/{memberId}
+      // --------------------------------------------------
+      match /members/{memberId} {
+        allow read: if hasYatraAccess(yatraId);
+        allow create, update: if hasYatraAccess(yatraId);
+        allow delete: if isOrganizer(yatraId);
+      }
+
+      // --------------------------------------------------
+      // Subcollection: Payments -> yatras/{yatraId}/payments/{paymentId}
+      // Sahayak can record new payment but CANNOT edit or delete
+      // --------------------------------------------------
+      match /payments/{paymentId} {
+        allow read: if hasYatraAccess(yatraId);
+        allow create: if hasYatraAccess(yatraId);
+        allow update, delete: if isOrganizer(yatraId);
+      }
+
+      // --------------------------------------------------
+      // Subcollection: Expenses -> yatras/{yatraId}/expenses/{expenseId}
+      // Sahayak can record and update expenses, but CANNOT delete
+      // --------------------------------------------------
+      match /expenses/{expenseId} {
+        allow read: if hasYatraAccess(yatraId);
+        allow create, update: if hasYatraAccess(yatraId);
+        allow delete: if isOrganizer(yatraId);
+      }
+
+      // --------------------------------------------------
+      // Subcollection: Staff -> yatras/{yatraId}/staff/{staffUid}
+      // Document ID is the Sahayak's Firebase Auth UID.
+      // Only Organizer can create, update, or delete staff.
+      // --------------------------------------------------
+      match /staff/{staffUid} {
+        allow read: if hasYatraAccess(yatraId);
+        allow create, update, delete: if isOrganizer(yatraId);
+      }
+    }
+  }
+}
