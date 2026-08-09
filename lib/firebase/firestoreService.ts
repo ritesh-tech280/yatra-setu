@@ -8,6 +8,7 @@ import {
   deleteDoc,
   query,
   where,
+  orderBy,
   onSnapshot,
   Unsubscribe,
 } from "firebase/firestore";
@@ -20,6 +21,7 @@ import type {
   YatraStaff,
   Sahayak,
   YatraRole,
+  YatraInvitation,
 } from "@/types/yatra";
 
 // Local storage fallback keys
@@ -29,6 +31,7 @@ const LS_KEYS = {
   PAYMENTS: "yatrasetu_payments",
   EXPENSES: "yatrasetu_expenses",
   SAHAYAKS: "yatrasetu_sahayaks",
+  INVITATIONS: "yatrasetu_invitations",
 };
 
 function getLocal<T>(key: string, fallback: T[] = []): T[] {
@@ -51,6 +54,16 @@ function setLocal<T>(key: string, data: T[]): void {
   }
 }
 
+export function cleanDocData<T extends Record<string, any>>(data: T): Record<string, any> {
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined) {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 // ---------------- ROLE RESOLUTION ----------------
 
 /**
@@ -61,10 +74,6 @@ function setLocal<T>(key: string, data: T[]): void {
  */
 export async function getYatraRole(yatraId?: string, uid?: string): Promise<YatraRole> {
   if (!yatraId || !uid) return "no_access";
-
-  // Demo user check
-  if (uid === "org-1") return "organizer";
-  if (uid === "sahayak-1") return "sahayak";
 
   if (isFirebaseConfigured && db) {
     try {
@@ -95,46 +104,102 @@ export async function getYatraRole(yatraId?: string, uid?: string): Promise<Yatr
   // Local storage fallback
   const yatras = getLocal<Yatra>(LS_KEYS.YATRAS, []);
   const yatra = yatras.find((y) => y.id === yatraId);
-  if (yatra && (yatra.organizerId === uid || uid.startsWith("org-"))) return "organizer";
+  if (yatra && yatra.organizerId === uid) return "organizer";
 
   const sahayaks = getLocal<YatraStaff>(LS_KEYS.SAHAYAKS, []);
   const sahayak = sahayaks.find(
     (s) => s.yatraId === yatraId && (s.uid === uid || s.id === uid) && s.status === "active"
   );
-  if (sahayak || uid.startsWith("sahayak-")) return "sahayak";
+  if (sahayak?.role === "sahayak") return "sahayak";
 
   return "no_access";
 }
 
 // ---------------- YATRA CRUD (Root: yatras/{yatraId}) ----------------
 
-export async function fetchYatras(_userId?: string): Promise<Yatra[]> {
+export async function fetchYatras(userId?: string): Promise<Yatra[]> {
   if (isFirebaseConfigured && db) {
     try {
       const col = collection(db, "yatras");
       const snap = await getDocs(col);
-      const list: Yatra[] = [];
-      snap.forEach((d) => list.push({ id: d.id, ...d.data() } as Yatra));
-      if (list.length > 0) {
-        return list;
+      const allYatrasMap = new Map<string, Yatra>();
+      snap.forEach((d) => {
+        allYatrasMap.set(d.id, { id: d.id, ...d.data() } as Yatra);
+      });
+      const allYatras = Array.from(allYatrasMap.values());
+
+      if (!userId) {
+        return allYatras;
       }
+
+      // Filter Yatras where user is Organizer or Sahayak
+      const accessibleMap = new Map<string, Yatra>();
+      for (const y of allYatras) {
+        if (
+          y.organizerId === userId ||
+          (userId === "org-1" && (!y.organizerId || y.organizerId === "org-1"))
+        ) {
+          accessibleMap.set(y.id, y);
+          continue;
+        }
+        if (Array.isArray(y.sahayakIds) && y.sahayakIds.includes(userId)) {
+          accessibleMap.set(y.id, y);
+          continue;
+        }
+        try {
+          const staffDoc = await getDoc(doc(db, "yatras", y.id, "staff", userId));
+          if (staffDoc.exists() && staffDoc.data()?.status === "active") {
+            accessibleMap.set(y.id, y);
+          }
+        } catch {}
+      }
+
+      return Array.from(accessibleMap.values());
     } catch (e) {
       console.warn("Firestore fetchYatras error, using local storage:", e);
     }
   }
-  return getLocal<Yatra>(LS_KEYS.YATRAS, []);
+
+  const localList = getLocal<Yatra>(LS_KEYS.YATRAS, []);
+  const localMap = new Map<string, Yatra>();
+  localList.forEach((y) => localMap.set(y.id, y));
+  const uniqueLocal = Array.from(localMap.values());
+
+  if (!userId) return uniqueLocal;
+  return uniqueLocal.filter(
+    (y) =>
+      y.organizerId === userId ||
+      (userId === "org-1" && (!y.organizerId || y.organizerId === "org-1")) ||
+      y.sahayakIds?.includes(userId)
+  );
 }
 
-export function listenToYatras(callback: (yatras: Yatra[]) => void): Unsubscribe | null {
+export function listenToYatras(
+  callback: (yatras: Yatra[]) => void,
+  userId?: string
+): Unsubscribe | null {
   if (!isFirebaseConfigured || !db) return null;
   try {
     const col = collection(db, "yatras");
     return onSnapshot(
       col,
       (snap) => {
-        const list: Yatra[] = [];
-        snap.forEach((d) => list.push({ id: d.id, ...d.data() } as Yatra));
-        callback(list);
+        const map = new Map<string, Yatra>();
+        snap.forEach((d) => {
+          map.set(d.id, { id: d.id, ...d.data() } as Yatra);
+        });
+        const all = Array.from(map.values());
+        if (!userId) {
+          callback(all);
+          return;
+        }
+        const filtered = all.filter(
+          (y) =>
+            y.organizerId === userId ||
+            (userId === "org-1" && (!y.organizerId || y.organizerId === "org-1")) ||
+            y.sahayakIds?.includes(userId)
+        );
+        callback(filtered);
       },
       (err) => {
         console.warn("Real-time yatras error:", err);
@@ -627,5 +692,199 @@ export function resetDemoData(): void {
     localStorage.removeItem(LS_KEYS.PAYMENTS);
     localStorage.removeItem(LS_KEYS.EXPENSES);
     localStorage.removeItem(LS_KEYS.SAHAYAKS);
+    localStorage.removeItem(LS_KEYS.INVITATIONS);
   }
+}
+
+// ---------------- INVITATIONS SERVICE ----------------
+
+export async function fetchInvitations(yatraId: string): Promise<YatraInvitation[]> {
+  if (isFirebaseConfigured && db && yatraId) {
+    try {
+      const q = query(
+        collection(db, "yatras", yatraId, "invitations"),
+        orderBy("createdAt", "desc")
+      );
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        return snap.docs.map((d) => ({ id: d.id, ...d.data() } as YatraInvitation));
+      }
+    } catch (e) {
+      console.warn("Firestore fetchInvitations fallback:", e);
+    }
+  }
+  const local = getLocal<YatraInvitation>(LS_KEYS.INVITATIONS, []);
+  return local.filter((i) => i.yatraId === yatraId);
+}
+
+export function listenToInvitations(
+  yatraId: string,
+  callback: (invitations: YatraInvitation[]) => void
+): Unsubscribe | null {
+  if (!isFirebaseConfigured || !db || !yatraId) return null;
+  try {
+    const q = query(
+      collection(db, "yatras", yatraId, "invitations"),
+      orderBy("createdAt", "desc")
+    );
+    return onSnapshot(
+      q,
+      (snap) => {
+        const list: YatraInvitation[] = [];
+        snap.forEach((d) => list.push({ id: d.id, ...d.data() } as YatraInvitation));
+        callback(list);
+      },
+      (err) => {
+        console.warn("Real-time invitations error:", err);
+      }
+    );
+  } catch (e) {
+    console.warn("Failed to listen to invitations:", e);
+    return null;
+  }
+}
+
+export async function fetchInvitationByToken(token: string): Promise<YatraInvitation | null> {
+  if (isFirebaseConfigured && db && token) {
+    try {
+      const docRef = doc(db, "invitations", token);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        return { id: snap.id, ...snap.data() } as YatraInvitation;
+      }
+    } catch (e) {
+      console.warn("Firestore fetchInvitationByToken fallback:", e);
+    }
+  }
+  const local = getLocal<YatraInvitation>(LS_KEYS.INVITATIONS, []);
+  return local.find((i) => i.token === token) || null;
+}
+
+export async function createYatraInvitation(
+  yatraId: string,
+  invitationData: {
+    email: string;
+    name?: string;
+    phone?: string;
+    memberId?: string;
+    organizerName?: string;
+    yatraName?: string;
+  }
+): Promise<{ invitation: YatraInvitation; inviteUrl: string }> {
+  const token = `inv_${Math.random().toString(36).substring(2, 12)}_${Date.now()}`;
+  const inviteId = `inv_${Date.now()}`;
+  const now = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const currentUid = auth?.currentUser?.uid || "org-1";
+
+  const newInvitation: YatraInvitation = {
+    id: inviteId,
+    token,
+    yatraId,
+    yatraName: invitationData.yatraName || "Kanwar Yatra",
+    organizerName: invitationData.organizerName || "Organizer",
+    email: invitationData.email.trim().toLowerCase(),
+    name: invitationData.name?.trim() || "",
+    phone: invitationData.phone?.trim() || "",
+    memberId: invitationData.memberId || "",
+    role: "sahayak",
+    status: "pending",
+    invitedBy: currentUid,
+    createdAt: now,
+    expiresAt,
+  };
+
+  if (isFirebaseConfigured && db && yatraId) {
+    try {
+      const cleaned = cleanDocData(newInvitation);
+      await setDoc(doc(db, "yatras", yatraId, "invitations", inviteId), cleaned);
+      await setDoc(doc(db, "invitations", token), cleaned);
+    } catch (e) {
+      console.warn("Firestore createYatraInvitation fallback:", e);
+    }
+  }
+
+  const existing = getLocal<YatraInvitation>(LS_KEYS.INVITATIONS, []);
+  setLocal(LS_KEYS.INVITATIONS, [newInvitation, ...existing.filter((i) => i.id !== inviteId)]);
+
+  const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+  const inviteUrl = `${origin}/invite/${token}`;
+
+  return { invitation: newInvitation, inviteUrl };
+}
+
+export async function acceptYatraInvitation(
+  token: string,
+  userData: {
+    uid: string;
+    name?: string;
+    email?: string;
+    phone?: string;
+  }
+): Promise<{ success: boolean; yatraId: string }> {
+  const inv = await fetchInvitationByToken(token);
+  if (!inv) {
+    throw new Error("Invitation not found or invalid.");
+  }
+
+  // Add staff
+  await addSahayak(inv.yatraId, {
+    uid: userData.uid,
+    name: userData.name || inv.name,
+    phone: userData.phone || inv.phone,
+    email: userData.email || inv.email,
+    memberId: inv.memberId,
+  });
+
+  const now = new Date().toISOString();
+  const updatedInvitation: YatraInvitation = {
+    ...inv,
+    status: "accepted",
+    acceptedAt: now,
+    acceptedByUid: userData.uid,
+  };
+
+  if (isFirebaseConfigured && db) {
+    try {
+      const cleaned = cleanDocData({
+        status: "accepted",
+        acceptedAt: now,
+        acceptedByUid: userData.uid,
+      });
+      await updateDoc(doc(db, "yatras", inv.yatraId, "invitations", inv.id), cleaned);
+      await updateDoc(doc(db, "invitations", token), cleaned);
+    } catch (e) {
+      console.warn("Firestore acceptYatraInvitation fallback:", e);
+    }
+  }
+
+  const existing = getLocal<YatraInvitation>(LS_KEYS.INVITATIONS, []);
+  setLocal(
+    LS_KEYS.INVITATIONS,
+    existing.map((i) => (i.token === token ? updatedInvitation : i))
+  );
+
+  return { success: true, yatraId: inv.yatraId };
+}
+
+export async function cancelYatraInvitation(
+  yatraId: string,
+  inviteId: string,
+  token: string
+): Promise<void> {
+  if (isFirebaseConfigured && db && yatraId) {
+    try {
+      await deleteDoc(doc(db, "yatras", yatraId, "invitations", inviteId));
+      if (token) {
+        await deleteDoc(doc(db, "invitations", token));
+      }
+    } catch (e) {
+      console.warn("Firestore cancelYatraInvitation fallback:", e);
+    }
+  }
+  const existing = getLocal<YatraInvitation>(LS_KEYS.INVITATIONS, []);
+  setLocal(
+    LS_KEYS.INVITATIONS,
+    existing.filter((i) => i.id !== inviteId && i.token !== token)
+  );
 }

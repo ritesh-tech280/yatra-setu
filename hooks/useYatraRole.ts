@@ -37,18 +37,6 @@ export function useYatraRole(yatraId?: string, yatraOrganizerId?: string): Yatra
       return;
     }
 
-    // Demo role fallback
-    if (user.id === "org-1" || user.role === "organizer") {
-      setRole("organizer");
-      setLoading(false);
-      return;
-    }
-    if (user.id === "sahayak-1" || user.role === "sahayak") {
-      setRole("sahayak");
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
     getYatraRole(yatraId, currentUid)
       .then((resolvedRole) => {

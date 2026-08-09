@@ -10,8 +10,18 @@ import {
   where,
 } from "firebase/firestore";
 import { db as serverDb } from "@/config/firebaseConfig";
-import type { Yatra, Member, Payment, Expense, Sahayak, UserProfile } from "@/types/yatra";
+import type { Yatra, Member, Payment, Expense, Sahayak, UserProfile, YatraInvitation } from "@/types/yatra";
 import { DEMO_ORGANIZER } from "../constants";
+
+export function cleanDocData<T extends Record<string, any>>(data: T): Record<string, any> {
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined) {
+      result[key] = value;
+    }
+  }
+  return result;
+}
 
 // In-Memory Server Store
 const globalStore = global as unknown as {
@@ -22,6 +32,7 @@ const globalStore = global as unknown as {
     expenses: Expense[];
     sahayaks: Sahayak[];
     users: UserProfile[];
+    invitations: YatraInvitation[];
   };
 };
 
@@ -33,7 +44,12 @@ if (!globalStore.__YATRA_STORE__) {
     expenses: [],
     sahayaks: [],
     users: [DEMO_ORGANIZER],
+    invitations: [],
   };
+}
+
+if (!globalStore.__YATRA_STORE__.invitations) {
+  globalStore.__YATRA_STORE__.invitations = [];
 }
 
 const memoryStore = globalStore.__YATRA_STORE__;
@@ -58,9 +74,9 @@ export async function getDbYatras(userId?: string): Promise<Yatra[]> {
 export async function getDbYatraById(id: string): Promise<Yatra | null> {
   if (serverDb) {
     try {
-      const snap = await getDoc(doc(serverDb, "yatras", id));
-      if (snap.exists()) {
-        return { id: snap.id, ...snap.data() } as Yatra;
+      const d = await getDoc(doc(serverDb, "yatras", id));
+      if (d.exists()) {
+        return { id: d.id, ...d.data() } as Yatra;
       }
     } catch (e) {
       console.warn("Firestore getDbYatraById fallback:", e);
@@ -69,39 +85,48 @@ export async function getDbYatraById(id: string): Promise<Yatra | null> {
   return memoryStore.yatras.find((y) => y.id === id) || null;
 }
 
-export async function createDbYatra(data: Omit<Yatra, "id" | "createdAt" | "updatedAt">): Promise<Yatra> {
-  const id = `yatra-${Date.now()}`;
+export async function createDbYatra(data: Partial<Yatra>): Promise<Yatra> {
+  const newId = data.id || `yatra_${Date.now()}`;
   const now = new Date().toISOString();
-  const newYatra: Yatra = {
-    ...data,
-    id,
+  const yatra: Yatra = {
+    id: newId,
+    name: data.name || "My Yatra",
+    startPlace: data.startPlace || "",
+    destination: data.destination || "",
+    startDate: data.startDate || now.split("T")[0],
+    endDate: data.endDate || now.split("T")[0],
+    fare: Number(data.fare) || 0,
+    organizerId: data.organizerId || "org-1",
+    organizerName: data.organizerName || "Organizer",
+    description: data.description || "",
+    sahayakIds: data.sahayakIds || [],
     createdAt: now,
     updatedAt: now,
   };
 
   if (serverDb) {
     try {
-      await setDoc(doc(serverDb, "yatras", id), newYatra);
+      await setDoc(doc(serverDb, "yatras", newId), cleanDocData(yatra));
     } catch (e) {
       console.warn("Firestore createDbYatra fallback:", e);
     }
   }
-  memoryStore.yatras.unshift(newYatra);
-  return newYatra;
+  memoryStore.yatras.unshift(yatra);
+  return yatra;
 }
 
-export async function updateDbYatra(id: string, updates: Partial<Yatra>): Promise<Yatra | null> {
-  const now = new Date().toISOString();
+export async function updateDbYatra(id: string, data: Partial<Yatra>): Promise<Yatra | null> {
+  const updatedData = { ...data, updatedAt: new Date().toISOString() };
   if (serverDb) {
     try {
-      await updateDoc(doc(serverDb, "yatras", id), { ...updates, updatedAt: now });
+      await updateDoc(doc(serverDb, "yatras", id), cleanDocData(updatedData));
     } catch (e) {
       console.warn("Firestore updateDbYatra fallback:", e);
     }
   }
   const idx = memoryStore.yatras.findIndex((y) => y.id === id);
   if (idx !== -1) {
-    memoryStore.yatras[idx] = { ...memoryStore.yatras[idx], ...updates, updatedAt: now };
+    memoryStore.yatras[idx] = { ...memoryStore.yatras[idx], ...updatedData };
     return memoryStore.yatras[idx];
   }
   return null;
@@ -123,7 +148,7 @@ export async function deleteDbYatra(id: string): Promise<boolean> {
   return true;
 }
 
-// ---------------- MEMBERS (Nested: yatras/{yatraId}/members) ----------------
+// ---------------- MEMBERS ----------------
 export async function getDbMembers(yatraId: string): Promise<Member[]> {
   if (serverDb && yatraId) {
     try {
@@ -138,42 +163,46 @@ export async function getDbMembers(yatraId: string): Promise<Member[]> {
   return memoryStore.members.filter((m) => m.yatraId === yatraId);
 }
 
-export async function createDbMember(data: Omit<Member, "id" | "createdAt" | "updatedAt">): Promise<Member> {
-  const id = `member-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+export async function createDbMember(data: Partial<Member>): Promise<Member> {
+  const newId = data.id || `mem_${Date.now()}`;
   const now = new Date().toISOString();
-  const newMember: Member = {
-    ...data,
-    id,
+  const member: Member = {
+    id: newId,
+    yatraId: data.yatraId || "",
+    name: data.name || "Member",
+    phone: data.phone || "",
+    address: data.address || "",
+    notes: data.notes || "",
     createdAt: now,
     updatedAt: now,
   };
 
   if (serverDb && data.yatraId) {
     try {
-      await setDoc(doc(serverDb, "yatras", data.yatraId, "members", id), newMember);
+      await setDoc(doc(serverDb, "yatras", data.yatraId, "members", newId), cleanDocData(member));
     } catch (e) {
       console.warn("Firestore createDbMember fallback:", e);
     }
   }
-  memoryStore.members.unshift(newMember);
-  return newMember;
+  memoryStore.members.unshift(member);
+  return member;
 }
 
-export async function updateDbMember(id: string, updates: Partial<Member>, yatraId?: string): Promise<Member | null> {
-  const now = new Date().toISOString();
+export async function updateDbMember(id: string, data: Partial<Member>): Promise<Member | null> {
+  const updatedData = { ...data, updatedAt: new Date().toISOString() };
   const current = memoryStore.members.find((m) => m.id === id);
-  const actualYatraId = yatraId || current?.yatraId;
+  const yatraId = data.yatraId || current?.yatraId;
 
-  if (serverDb && actualYatraId) {
+  if (serverDb && yatraId) {
     try {
-      await updateDoc(doc(serverDb, "yatras", actualYatraId, "members", id), { ...updates, updatedAt: now });
+      await updateDoc(doc(serverDb, "yatras", yatraId, "members", id), cleanDocData(updatedData));
     } catch (e) {
       console.warn("Firestore updateDbMember fallback:", e);
     }
   }
   const idx = memoryStore.members.findIndex((m) => m.id === id);
   if (idx !== -1) {
-    memoryStore.members[idx] = { ...memoryStore.members[idx], ...updates, updatedAt: now };
+    memoryStore.members[idx] = { ...memoryStore.members[idx], ...updatedData };
     return memoryStore.members[idx];
   }
   return null;
@@ -195,7 +224,7 @@ export async function deleteDbMember(id: string, yatraId?: string): Promise<bool
   return true;
 }
 
-// ---------------- PAYMENTS (Nested: yatras/{yatraId}/payments) ----------------
+// ---------------- PAYMENTS ----------------
 export async function getDbPayments(yatraId: string): Promise<Payment[]> {
   if (serverDb && yatraId) {
     try {
@@ -210,24 +239,31 @@ export async function getDbPayments(yatraId: string): Promise<Payment[]> {
   return memoryStore.payments.filter((p) => p.yatraId === yatraId);
 }
 
-export async function createDbPayment(data: Omit<Payment, "id" | "createdAt">): Promise<Payment> {
-  const id = `pay-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+export async function createDbPayment(data: Partial<Payment>): Promise<Payment> {
+  const newId = data.id || `pay_${Date.now()}`;
   const now = new Date().toISOString();
-  const newPayment: Payment = {
-    ...data,
-    id,
+  const payment: Payment = {
+    id: newId,
+    yatraId: data.yatraId || "",
+    memberId: data.memberId || "",
+    amount: Number(data.amount) || 0,
+    paymentMethod: data.paymentMethod || "Cash",
+    paymentDate: data.paymentDate || now.split("T")[0],
+    note: data.note || "",
+    createdBy: data.createdBy || "org-1",
+    createdByName: data.createdByName || "Organizer",
     createdAt: now,
   };
 
   if (serverDb && data.yatraId) {
     try {
-      await setDoc(doc(serverDb, "yatras", data.yatraId, "payments", id), newPayment);
+      await setDoc(doc(serverDb, "yatras", data.yatraId, "payments", newId), cleanDocData(payment));
     } catch (e) {
       console.warn("Firestore createDbPayment fallback:", e);
     }
   }
-  memoryStore.payments.unshift(newPayment);
-  return newPayment;
+  memoryStore.payments.unshift(payment);
+  return payment;
 }
 
 export async function deleteDbPayment(id: string, yatraId?: string): Promise<boolean> {
@@ -245,7 +281,7 @@ export async function deleteDbPayment(id: string, yatraId?: string): Promise<boo
   return true;
 }
 
-// ---------------- EXPENSES (Nested: yatras/{yatraId}/expenses) ----------------
+// ---------------- EXPENSES ----------------
 export async function getDbExpenses(yatraId: string): Promise<Expense[]> {
   if (serverDb && yatraId) {
     try {
@@ -260,42 +296,48 @@ export async function getDbExpenses(yatraId: string): Promise<Expense[]> {
   return memoryStore.expenses.filter((e) => e.yatraId === yatraId);
 }
 
-export async function createDbExpense(data: Omit<Expense, "id" | "createdAt" | "updatedAt">): Promise<Expense> {
-  const id = `exp-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+export async function createDbExpense(data: Partial<Expense>): Promise<Expense> {
+  const newId = data.id || `exp_${Date.now()}`;
   const now = new Date().toISOString();
-  const newExpense: Expense = {
-    ...data,
-    id,
+  const expense: Expense = {
+    id: newId,
+    yatraId: data.yatraId || "",
+    category: data.category || "Other",
+    amount: Number(data.amount) || 0,
+    expenseDate: data.expenseDate || now.split("T")[0],
+    paidBy: data.paidBy || "Organizer",
+    description: data.description || "",
+    createdBy: data.createdBy || "org-1",
     createdAt: now,
     updatedAt: now,
   };
 
   if (serverDb && data.yatraId) {
     try {
-      await setDoc(doc(serverDb, "yatras", data.yatraId, "expenses", id), newExpense);
+      await setDoc(doc(serverDb, "yatras", data.yatraId, "expenses", newId), cleanDocData(expense));
     } catch (e) {
       console.warn("Firestore createDbExpense fallback:", e);
     }
   }
-  memoryStore.expenses.unshift(newExpense);
-  return newExpense;
+  memoryStore.expenses.unshift(expense);
+  return expense;
 }
 
-export async function updateDbExpense(id: string, updates: Partial<Expense>, yatraId?: string): Promise<Expense | null> {
-  const now = new Date().toISOString();
+export async function updateDbExpense(id: string, data: Partial<Expense>): Promise<Expense | null> {
+  const updatedData = { ...data, updatedAt: new Date().toISOString() };
   const current = memoryStore.expenses.find((e) => e.id === id);
-  const actualYatraId = yatraId || current?.yatraId;
+  const yatraId = data.yatraId || current?.yatraId;
 
-  if (serverDb && actualYatraId) {
+  if (serverDb && yatraId) {
     try {
-      await updateDoc(doc(serverDb, "yatras", actualYatraId, "expenses", id), { ...updates, updatedAt: now });
+      await updateDoc(doc(serverDb, "yatras", yatraId, "expenses", id), cleanDocData(updatedData));
     } catch (e) {
       console.warn("Firestore updateDbExpense fallback:", e);
     }
   }
   const idx = memoryStore.expenses.findIndex((e) => e.id === id);
   if (idx !== -1) {
-    memoryStore.expenses[idx] = { ...memoryStore.expenses[idx], ...updates, updatedAt: now };
+    memoryStore.expenses[idx] = { ...memoryStore.expenses[idx], ...updatedData };
     return memoryStore.expenses[idx];
   }
   return null;
@@ -316,7 +358,7 @@ export async function deleteDbExpense(id: string, yatraId?: string): Promise<boo
   return true;
 }
 
-// ---------------- SAHAYAKS / STAFF (Nested: yatras/{yatraId}/staff) ----------------
+// ---------------- SAHAYAKS ----------------
 export async function getDbSahayaks(yatraId: string): Promise<Sahayak[]> {
   if (serverDb && yatraId) {
     try {
@@ -331,29 +373,19 @@ export async function getDbSahayaks(yatraId: string): Promise<Sahayak[]> {
   return memoryStore.sahayaks.filter((s) => s.yatraId === yatraId);
 }
 
-export async function createDbSahayak(data: {
-  yatraId: string;
-  uid?: string;
-  name?: string;
-  phone?: string;
-  email?: string;
-  memberId?: string;
-  role?: "sahayak";
-  status?: "active" | "inactive";
-  addedBy?: string;
-}): Promise<Sahayak> {
-  const staffUid = data.uid || `staff-${Date.now()}`;
+export async function createDbSahayak(data: Partial<Sahayak>): Promise<Sahayak> {
+  const staffUid = data.uid || data.id || `sahayak_${Date.now()}`;
   const now = new Date().toISOString();
   const newSahayak: Sahayak = {
     id: staffUid,
     uid: staffUid,
-    yatraId: data.yatraId,
+    yatraId: data.yatraId || "",
     role: data.role || "sahayak",
     status: data.status || "active",
-    name: data.name,
-    phone: data.phone,
-    email: data.email,
-    memberId: data.memberId,
+    name: data.name || "",
+    phone: data.phone || "",
+    email: data.email || "",
+    memberId: data.memberId || "",
     createdAt: now,
     addedAt: now,
     addedBy: data.addedBy || "org-1",
@@ -361,7 +393,7 @@ export async function createDbSahayak(data: {
 
   if (serverDb && data.yatraId) {
     try {
-      await setDoc(doc(serverDb, "yatras", data.yatraId, "staff", staffUid), newSahayak);
+      await setDoc(doc(serverDb, "yatras", data.yatraId, "staff", staffUid), cleanDocData(newSahayak));
     } catch (e) {
       console.warn("Firestore createDbSahayak fallback:", e);
     }
@@ -385,6 +417,86 @@ export async function deleteDbSahayak(id: string, yatraId?: string): Promise<boo
   return true;
 }
 
+// ---------------- INVITATIONS ----------------
+export async function getDbInvitations(yatraId: string): Promise<YatraInvitation[]> {
+  if (serverDb && yatraId) {
+    try {
+      const snap = await getDocs(collection(serverDb, "yatras", yatraId, "invitations"));
+      if (!snap.empty) {
+        return snap.docs.map((d) => ({ id: d.id, ...d.data() } as YatraInvitation));
+      }
+    } catch (e) {
+      console.warn("Firestore getDbInvitations fallback:", e);
+    }
+  }
+  return memoryStore.invitations.filter((i) => i.yatraId === yatraId);
+}
+
+export async function getDbInvitationByToken(token: string): Promise<YatraInvitation | null> {
+  if (serverDb && token) {
+    try {
+      const d = await getDoc(doc(serverDb, "invitations", token));
+      if (d.exists()) {
+        return { id: d.id, ...d.data() } as YatraInvitation;
+      }
+    } catch (e) {
+      console.warn("Firestore getDbInvitationByToken fallback:", e);
+    }
+  }
+  return memoryStore.invitations.find((i) => i.token === token) || null;
+}
+
+export async function createDbInvitation(data: Partial<YatraInvitation>): Promise<YatraInvitation> {
+  const inviteId = data.id || `inv_${Date.now()}`;
+  const token = data.token || `inv_${Math.random().toString(36).substring(2, 10)}_${Date.now()}`;
+  const now = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const invitation: YatraInvitation = {
+    id: inviteId,
+    token,
+    yatraId: data.yatraId || "",
+    yatraName: data.yatraName || "Kanwar Yatra",
+    organizerName: data.organizerName || "Organizer",
+    email: data.email || "",
+    name: data.name || "",
+    phone: data.phone || "",
+    memberId: data.memberId || "",
+    role: "sahayak",
+    status: "pending",
+    invitedBy: data.invitedBy || "org-1",
+    createdAt: now,
+    expiresAt,
+  };
+
+  if (serverDb && data.yatraId) {
+    try {
+      const cleaned = cleanDocData(invitation);
+      await setDoc(doc(serverDb, "yatras", data.yatraId, "invitations", inviteId), cleaned);
+      await setDoc(doc(serverDb, "invitations", token), cleaned);
+    } catch (e) {
+      console.warn("Firestore createDbInvitation fallback:", e);
+    }
+  }
+  memoryStore.invitations.unshift(invitation);
+  return invitation;
+}
+
+export async function cancelDbInvitation(inviteId: string, token: string, yatraId: string): Promise<boolean> {
+  if (serverDb && yatraId) {
+    try {
+      await deleteDoc(doc(serverDb, "yatras", yatraId, "invitations", inviteId));
+      if (token) {
+        await deleteDoc(doc(serverDb, "invitations", token));
+      }
+    } catch (e) {
+      console.warn("Firestore cancelDbInvitation fallback:", e);
+    }
+  }
+  memoryStore.invitations = memoryStore.invitations.filter((i) => i.id !== inviteId && i.token !== token);
+  return true;
+}
+
 // ---------------- USERS / AUTH ----------------
 export async function findDbUserByEmail(email: string): Promise<UserProfile | null> {
   const user = memoryStore.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
@@ -394,7 +506,7 @@ export async function findDbUserByEmail(email: string): Promise<UserProfile | nu
 export async function createDbUser(user: UserProfile): Promise<UserProfile> {
   if (serverDb) {
     try {
-      await setDoc(doc(serverDb, "users", user.id), user);
+      await setDoc(doc(serverDb, "users", user.id), cleanDocData(user));
     } catch (e) {
       console.warn("Firestore createDbUser fallback:", e);
     }
