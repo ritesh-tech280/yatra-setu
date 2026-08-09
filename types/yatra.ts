@@ -108,6 +108,25 @@ export interface YatraStaff {
 // Alias for UI backwards compatibility
 export type Sahayak = YatraStaff;
 
+export interface YatraInvitation {
+  id: string;
+  token: string;
+  yatraId: string;
+  yatraName?: string;
+  organizerName?: string;
+  email: string;
+  name?: string;
+  phone?: string;
+  memberId?: string;
+  role: "sahayak";
+  status: "pending" | "accepted" | "expired" | "canceled" | "revoked";
+  invitedBy?: string;
+  createdAt: string;
+  expiresAt: string;
+  acceptedAt?: string;
+  acceptedByUid?: string;
+}
+
 export interface MemberBalance {
   paid: number;
   remaining: number;

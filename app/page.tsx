@@ -29,6 +29,9 @@ export default function YatraApp() {
     yatras,
     activeYatra,
     loading: dataLoading,
+    hasAccess,
+    userRole,
+    roleLoading,
     addNewMember,
     addNewExpense,
   } = useYatraData();
@@ -62,7 +65,7 @@ export default function YatraApp() {
     setIsAddPaymentOpen(true);
   };
 
-  if (authLoading || (user && dataLoading)) {
+  if (authLoading || (user && (dataLoading || roleLoading))) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 text-white gap-4">
         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-2xl shadow-xl shadow-amber-500/20 animate-pulse">
@@ -78,6 +81,46 @@ export default function YatraApp() {
 
   if (!user) {
     return null;
+  }
+
+  if (activeYatra && !hasAccess) {
+    return (
+      <main className="min-h-screen bg-slate-950 text-white grid place-items-center p-6">
+        <section className="max-w-md text-center rounded-3xl border border-slate-800 bg-slate-900 p-8 shadow-2xl space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mx-auto text-2xl">
+            🔒
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-amber-400">Yatra Access</p>
+            <h1 className="mt-2 text-2xl font-black">You are not a member of this Yatra</h1>
+            <p className="mt-2 text-xs leading-5 text-slate-400">
+              You do not have organizer or sahayak permissions for &ldquo;{activeYatra.name}&rdquo;.
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-col gap-2.5">
+            <button
+              onClick={() => setIsCreateYatraOpen(true)}
+              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 font-bold text-xs hover:from-amber-400 hover:to-orange-500 transition cursor-pointer"
+            >
+              + Create Your Own Yatra
+            </button>
+            <button
+              onClick={() => router.push("/login")}
+              className="w-full py-2.5 px-4 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800 transition cursor-pointer"
+            >
+              Switch User Account
+            </button>
+          </div>
+        </section>
+
+        {isCreateYatraOpen && (
+          <CreateYatraModal
+            onClose={() => setIsCreateYatraOpen(false)}
+          />
+        )}
+      </main>
+    );
   }
 
   return (

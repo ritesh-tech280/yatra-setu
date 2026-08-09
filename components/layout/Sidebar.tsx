@@ -83,7 +83,7 @@ export function Sidebar({ activeTab, onSelectTab, onCreateYatraClick }: SidebarP
               onChange={(e) => switchYatra(e.target.value)}
               className="w-full bg-slate-900/90 text-white font-bold text-sm rounded-xl py-2 px-3 border border-slate-700 focus:outline-none focus:border-amber-500 cursor-pointer"
             >
-              {yatras.map((y) => (
+              {Array.from(new Map(yatras.map((y) => [y.id, y])).values()).map((y) => (
                 <option key={y.id} value={y.id}>
                   {y.name}
                 </option>

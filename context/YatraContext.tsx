@@ -11,6 +11,7 @@ import type {
   FinancialSummary,
   MemberBalance,
   YatraRole,
+  YatraInvitation,
 } from "@/types/yatra";
 import {
   fetchYatras,
@@ -36,6 +37,10 @@ import {
   listenToSahayaks,
   addSahayak,
   removeSahayakFromDb,
+  fetchInvitations,
+  listenToInvitations,
+  createYatraInvitation,
+  cancelYatraInvitation,
   getYatraRole,
 } from "@/lib/firebase/firestoreService";
 import {
@@ -52,14 +57,18 @@ import {
   canManageSahayaks,
 } from "@/lib/permissions";
 import { calculateSummary, getMemberBalance, validatePaymentAmount } from "@/lib/calculations";
+import { auth } from "@/config/firebaseConfig";
 import { useAuth } from "./AuthContext";
 import { useToast } from "./ToastContext";
 
 interface YatraContextType {
   activeYatra: Yatra | null;
+  activeYatraId: string;
+  setActiveYatraId: (id: string) => void;
   yatras: Yatra[];
   loading: boolean;
   userRole: YatraRole;
+  roleLoading: boolean;
   isOrganizer: boolean;
   isSahayak: boolean;
   hasAccess: boolean;
@@ -67,6 +76,7 @@ interface YatraContextType {
   payments: Payment[];
   expenses: Expense[];
   sahayaks: YatraStaff[];
+  invitations: YatraInvitation[];
   summary: FinancialSummary;
   getMemberStatus: (memberId: string) => MemberBalance;
   switchYatra: (yatraId: string) => void;
@@ -97,9 +107,16 @@ interface YatraContextType {
   }) => Promise<Expense | null>;
   editExpense: (expenseId: string, data: Partial<Expense>) => Promise<void>;
   removeExpense: (expenseId: string) => Promise<void>;
-  // Sahayak CRUD
+  // Sahayak & Invitations CRUD
   addNewSahayak: (data: { uid?: string; name: string; phone: string; email?: string; memberId?: string }) => Promise<YatraStaff | null>;
   removeSahayak: (sahayakId: string) => Promise<void>;
+  sendSahayakInvitation: (data: {
+    email: string;
+    name?: string;
+    phone?: string;
+    memberId?: string;
+  }) => Promise<{ invitation: YatraInvitation; inviteUrl: string } | null>;
+  cancelSahayakInvite: (inviteId: string, token: string) => Promise<void>;
   // Utilities
   refreshData: () => Promise<void>;
   resetToSeedData: () => void;
@@ -117,161 +134,217 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [sahayaks, setSahayaks] = useState<YatraStaff[]>([]);
+  const [invitations, setInvitations] = useState<YatraInvitation[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Active yatra reference
+  // Active Yatra computed
   const activeYatra = useMemo(() => {
-    return yatras.find((y) => y.id === activeYatraId) || yatras[0] || null;
+    return yatras.find((y) => y.id === activeYatraId) || (yatras.length > 0 ? yatras[0] : null);
   }, [yatras, activeYatraId]);
 
   // Dynamic Yatra Role Resolution
-  const [userRole, setUserRole] = useState<YatraRole>("no_access");
+  const [userRole, setUserRole] = useState<YatraRole>("organizer");
+  const [roleLoading, setRoleLoading] = useState(false);
 
   useEffect(() => {
     const currentUid = user?.uid || user?.id;
-    if (!currentUid || !activeYatra) {
-      setUserRole("no_access");
+    if (!currentUid) {
+      setUserRole("organizer");
+      setRoleLoading(false);
       return;
     }
 
-    // Direct check if currentUser is Organizer
-    if (activeYatra.organizerId === currentUid) {
+    if (!activeYatra) {
       setUserRole("organizer");
+      setRoleLoading(false);
+      return;
+    }
+
+    // Direct check if currentUser is Organizer of active Yatra
+    if (
+      activeYatra.organizerId === currentUid ||
+      (currentUid === "org-1" && (!activeYatra.organizerId || activeYatra.organizerId === "org-1"))
+    ) {
+      setUserRole("organizer");
+      setRoleLoading(false);
       return;
     }
 
     // Demo role switch support
     if (user?.role === "organizer" || user?.id === "org-1") {
       setUserRole("organizer");
+      setRoleLoading(false);
       return;
     }
     if (user?.role === "sahayak" || user?.id === "sahayak-1") {
       setUserRole("sahayak");
+      setRoleLoading(false);
       return;
     }
 
     // Resolve from Firestore
+    setRoleLoading(true);
     getYatraRole(activeYatra.id, currentUid)
-      .then((r) => setUserRole(r))
-      .catch(() => setUserRole("no_access"));
+      .then((r) => {
+        if (r === "no_access") {
+          // If stored active yatra does not belong to user, clear it and allow creating/managing their own
+          setActiveYatraId("");
+          setUserRole("organizer");
+        } else {
+          setUserRole(r);
+        }
+      })
+      .catch(() => {
+        setActiveYatraId("");
+        setUserRole("organizer");
+      })
+      .finally(() => setRoleLoading(false));
   }, [user, activeYatra]);
 
   const isOrganizer = userRole === "organizer";
   const isSahayak = userRole === "sahayak";
-  const hasAccess = userRole === "organizer" || userRole === "sahayak";
+  const hasAccess = isOrganizer || isSahayak;
 
-  // Load and listen to all Yatras
+  // 1. Initial Load of Yatras
   useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
     const currentUid = user?.uid || user?.id;
-    fetchYatras(currentUid).then((list) => {
-      setYatras(list);
-      if (list.length > 0) {
-        setActiveYatraId((prev) => (prev && list.some((y) => y.id === prev) ? prev : list[0].id));
-      }
-      setLoading(false);
-    });
 
-    const unsub = listenToYatras((list) => {
-      if (list && list.length > 0) {
-        setYatras(list);
-        setActiveYatraId((prev) => (prev && list.some((y) => y.id === prev) ? prev : list[0].id));
-      }
-    });
+    async function loadYatras() {
+      setLoading(true);
+      try {
+        const fetched = await fetchYatras(currentUid);
+        const uniqueFetched = Array.from(new Map(fetched.map((y) => [y.id, y])).values());
+        setYatras(uniqueFetched);
+        if (uniqueFetched.length > 0) {
+          const savedActive = localStorage.getItem("yatrasetu_active_id");
+          if (savedActive && uniqueFetched.some((y) => y.id === savedActive)) {
+            setActiveYatraId(savedActive);
+          } else {
+            setActiveYatraId(uniqueFetched[0].id);
+          }
+        } else {
+          setActiveYatraId("");
+        }
 
+        unsubscribe = listenToYatras((updated) => {
+          const unique = Array.from(new Map(updated.map((y) => [y.id, y])).values());
+          setYatras(unique);
+        }, currentUid);
+      } catch (err: any) {
+        console.error("Error loading Yatras:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadYatras();
     return () => {
-      if (unsub) unsub();
+      if (unsubscribe) unsubscribe();
     };
-  }, [user?.id, user?.uid]);
+  }, [user]);
 
-  // Load and listen to active Yatra's nested subcollections
+  // 2. Load nested subcollections whenever activeYatra changes
   useEffect(() => {
-    const yId = activeYatra?.id;
-    if (!yId) {
+    if (!activeYatra) {
       setMembers([]);
       setPayments([]);
       setExpenses([]);
       setSahayaks([]);
-      setLoading(false);
+      setInvitations([]);
       return;
     }
 
-    setLoading(true);
+    const yatraId = activeYatra.id;
+    localStorage.setItem("yatrasetu_active_id", yatraId);
 
+    // Initial fetch of subcollections
     Promise.all([
-      fetchMembers(yId),
-      fetchPayments(yId),
-      fetchExpenses(yId),
-      fetchSahayaks(yId),
+      fetchMembers(yatraId),
+      fetchPayments(yatraId),
+      fetchExpenses(yatraId),
+      fetchSahayaks(yatraId),
+      fetchInvitations(yatraId),
     ])
-      .then(([mList, pList, eList, sList]) => {
-        setMembers(mList);
-        setPayments(pList);
-        setExpenses(eList);
-        setSahayaks(sList);
+      .then(([mList, pList, eList, sList, iList]) => {
+        setMembers(Array.from(new Map(mList.map((m) => [m.id, m])).values()));
+        setPayments(Array.from(new Map(pList.map((p) => [p.id, p])).values()));
+        setExpenses(Array.from(new Map(eList.map((e) => [e.id, e])).values()));
+        setSahayaks(Array.from(new Map(sList.map((s) => [s.id || s.uid, s])).values()));
+        setInvitations(Array.from(new Map(iList.map((i) => [i.id, i])).values()));
       })
-      .catch((e) => {
-        console.error("Failed to load yatra subcollections:", e);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      .catch((err) => console.error("Error fetching subcollections:", err));
 
-    const unsubMembers = listenToMembers(yId, (list) => setMembers(list));
-    const unsubPayments = listenToPayments(yId, (list) => setPayments(list));
-    const unsubExpenses = listenToExpenses(yId, (list) => setExpenses(list));
-    const unsubSahayaks = listenToSahayaks(yId, (list) => setSahayaks(list));
+    // Realtime listeners
+    const unsubMembers = listenToMembers(yatraId, (list) => {
+      setMembers(Array.from(new Map(list.map((m) => [m.id, m])).values()));
+    });
+    const unsubPayments = listenToPayments(yatraId, (list) => {
+      setPayments(Array.from(new Map(list.map((p) => [p.id, p])).values()));
+    });
+    const unsubExpenses = listenToExpenses(yatraId, (list) => {
+      setExpenses(Array.from(new Map(list.map((e) => [e.id, e])).values()));
+    });
+    const unsubSahayaks = listenToSahayaks(yatraId, (list) => {
+      setSahayaks(Array.from(new Map(list.map((s) => [s.id || s.uid, s])).values()));
+    });
+    const unsubInvitations = listenToInvitations(yatraId, (list) => {
+      setInvitations(Array.from(new Map(list.map((i) => [i.id, i])).values()));
+    });
 
     return () => {
       if (unsubMembers) unsubMembers();
       if (unsubPayments) unsubPayments();
       if (unsubExpenses) unsubExpenses();
       if (unsubSahayaks) unsubSahayaks();
+      if (unsubInvitations) unsubInvitations();
     };
-  }, [activeYatra?.id]);
+  }, [activeYatra]);
 
-  // Memoized financial summary
-  const summary = useMemo(() => {
-    const fare = activeYatra?.fare || 0;
-    return calculateSummary(members, payments, expenses, fare);
+  // Switch active Yatra
+  const switchYatra = useCallback((yatraId: string) => {
+    setActiveYatraId(yatraId);
+    localStorage.setItem("yatrasetu_active_id", yatraId);
+  }, []);
+
+  // Compute live financial summary
+  const summary: FinancialSummary = useMemo(() => {
+    return calculateSummary(members, payments, expenses, activeYatra?.fare || 0);
   }, [members, payments, expenses, activeYatra?.fare]);
 
-  // Member balance calculation helper
+  // Helper for single member status
   const getMemberStatus = useCallback(
     (memberId: string): MemberBalance => {
-      const fare = activeYatra?.fare || 0;
-      return getMemberBalance(memberId, payments, fare);
+      return getMemberBalance(memberId, payments, activeYatra?.fare || 0);
     },
     [payments, activeYatra?.fare]
   );
 
-  const switchYatra = (yId: string) => {
-    setActiveYatraId(yId);
-  };
-
   // ---------------- YATRA ACTIONS ----------------
-  const createNewYatra = async (data: Omit<Yatra, "id" | "createdAt" | "updatedAt">): Promise<Yatra> => {
+  const createNewYatra = async (
+    data: Omit<Yatra, "id" | "createdAt" | "updatedAt">
+  ): Promise<Yatra> => {
     const currentUid = user?.uid || user?.id || "org-1";
-    try {
-      const created = await saveYatra({
-        ...data,
-        organizerId: currentUid,
-        organizerName: user?.name || data.organizerName || "Organizer",
-      });
-      setYatras((prev) => [created, ...prev.filter((y) => y.id !== created.id)]);
-      setActiveYatraId(created.id);
-      success(`Yatra "${created.name}" created!`);
-      return created;
-    } catch (e: any) {
-      error(e?.message || "Failed to create Yatra.");
-      throw e;
-    }
+    const currentName = user?.name || "Organizer";
+
+    const newYatra = await saveYatra({
+      ...data,
+      organizerId: currentUid,
+      organizerName: currentName,
+    });
+
+    setYatras((prev) => [newYatra, ...prev.filter((y) => y.id !== newYatra.id)]);
+    setActiveYatraId(newYatra.id);
+    success(`Yatra "${newYatra.name}" created successfully!`);
+    return newYatra;
   };
 
   const editYatra = async (yatraId: string, updates: Partial<Yatra>) => {
     if (!canEditYatra(userRole)) {
-      error("Permission Denied: Only Organizer can edit Yatra settings.");
+      error("Permission Denied: Only the Organizer can update Yatra settings.");
       return;
     }
+
     try {
       await updateYatraDetails(yatraId, updates);
       setYatras((prev) =>
@@ -285,19 +358,18 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
 
   const removeYatra = async (yatraId: string) => {
     if (!canDeleteYatra(userRole)) {
-      error("Permission Denied: Only Organizer can delete a Yatra.");
+      error("Permission Denied: Only the Organizer can delete a Yatra.");
       return;
     }
+
     try {
       await deleteYatraFromDb(yatraId);
-      const remaining = yatras.filter((y) => y.id !== yatraId);
-      setYatras(remaining);
-      if (remaining.length > 0) {
-        setActiveYatraId(remaining[0].id);
-      } else {
-        setActiveYatraId("");
+      setYatras((prev) => prev.filter((y) => y.id !== yatraId));
+      if (activeYatraId === yatraId) {
+        const remaining = yatras.filter((y) => y.id !== yatraId);
+        setActiveYatraId(remaining[0]?.id || "");
       }
-      success("Yatra deleted.");
+      success("Yatra deleted successfully.");
     } catch (e: any) {
       error(e?.message || "Failed to delete Yatra.");
     }
@@ -315,9 +387,10 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
     if (!activeYatra) {
-      error("No active Yatra selected.");
+      error("Please select an active Yatra first.");
       return null;
     }
+
     try {
       const newMember = await saveMember({
         yatraId: activeYatra.id,
@@ -326,11 +399,12 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
         address: data.address?.trim() || "",
         notes: data.notes?.trim() || "",
       });
+
       setMembers((prev) => [newMember, ...prev.filter((m) => m.id !== newMember.id)]);
-      success(`Member "${newMember.name}" saved!`);
+      success(`Member "${newMember.name}" registered!`);
       return newMember;
     } catch (e: any) {
-      error(e?.message || "Failed to add Member.");
+      error(e?.message || "Failed to add member.");
       return null;
     }
   };
@@ -341,6 +415,7 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     if (!activeYatra) return;
+
     try {
       await updateMemberDetails(activeYatra.id, memberId, data);
       setMembers((prev) =>
@@ -348,22 +423,24 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
       );
       success("Member details updated.");
     } catch (e: any) {
-      error(e?.message || "Failed to update Member.");
+      error(e?.message || "Failed to update member.");
     }
   };
 
   const removeMember = async (memberId: string) => {
     if (!canDeleteMember(userRole)) {
-      error("Permission Denied: Only Organizer can delete members.");
+      error("Permission Denied: Only the Organizer can delete members.");
       return;
     }
     if (!activeYatra) return;
+
     try {
       await deleteMemberFromDb(activeYatra.id, memberId);
       setMembers((prev) => prev.filter((m) => m.id !== memberId));
-      success("Member removed.");
+      setPayments((prev) => prev.filter((p) => p.memberId !== memberId));
+      success("Member deleted.");
     } catch (e: any) {
-      error(e?.message || "Failed to delete Member.");
+      error(e?.message || "Failed to delete member.");
     }
   };
 
@@ -384,15 +461,14 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
 
-    const member = members.find((m) => m.id === data.memberId);
-    if (!member) {
-      error("Please select a valid Member.");
-      return null;
-    }
-
-    const validation = validatePaymentAmount(data.memberId, data.amount, payments, activeYatra.fare);
+    const validation = validatePaymentAmount(
+      data.memberId,
+      data.amount,
+      payments,
+      activeYatra.fare
+    );
     if (!validation.valid) {
-      error(validation.error || "Invalid payment amount.");
+      error(validation.error || "Invalid payment amount");
       return null;
     }
 
@@ -404,13 +480,14 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
         amount: Number(data.amount),
         paymentMethod: data.paymentMethod,
         paymentDate: data.paymentDate || new Date().toISOString().split("T")[0],
-        note: data.note?.trim() || "",
+        note: data.note || "",
         createdBy: currentUid,
         createdByName: user?.name || "Organizer",
       });
 
       setPayments((prev) => [newPayment, ...prev.filter((p) => p.id !== newPayment.id)]);
-      success(`₹${data.amount.toLocaleString("en-IN")} payment recorded for ${member.name}!`);
+      const member = members.find((m) => m.id === data.memberId);
+      success(`₹${data.amount.toLocaleString("en-IN")} payment recorded for ${member?.name || "member"}!`);
       return newPayment;
     } catch (e: any) {
       error(e?.message || "Failed to record payment.");
@@ -424,12 +501,13 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     if (!activeYatra) return;
+
     try {
       await deletePaymentFromDb(activeYatra.id, paymentId);
       setPayments((prev) => prev.filter((p) => p.id !== paymentId));
-      success("Payment transaction removed.");
+      success("Payment record deleted.");
     } catch (e: any) {
-      error(e?.message || "Failed to remove payment.");
+      error(e?.message || "Failed to delete payment.");
     }
   };
 
@@ -442,7 +520,7 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
     description?: string;
   }): Promise<Expense | null> => {
     if (!canAddExpense(userRole)) {
-      error("Permission Denied: You do not have permission to record expenses.");
+      error("Permission Denied: You do not have permission to add expenses.");
       return null;
     }
     if (!activeYatra) {
@@ -454,19 +532,19 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
       const currentUid = user?.uid || user?.id || "org-1";
       const newExpense = await saveExpense({
         yatraId: activeYatra.id,
-        category: data.category as any,
+        category: data.category,
         amount: Number(data.amount),
         expenseDate: data.expenseDate || new Date().toISOString().split("T")[0],
-        paidBy: data.paidBy.trim(),
-        description: data.description?.trim() || "",
+        paidBy: data.paidBy || user?.name || "Organizer",
+        description: data.description || "",
         createdBy: currentUid,
       });
 
       setExpenses((prev) => [newExpense, ...prev.filter((e) => e.id !== newExpense.id)]);
-      success(`₹${data.amount.toLocaleString("en-IN")} expense recorded.`);
+      success(`₹${data.amount.toLocaleString("en-IN")} logged under ${data.category}!`);
       return newExpense;
     } catch (e: any) {
-      error(e?.message || "Failed to record expense.");
+      error(e?.message || "Failed to add expense.");
       return null;
     }
   };
@@ -477,10 +555,11 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     if (!activeYatra) return;
+
     try {
       await updateExpenseDetails(activeYatra.id, expenseId, data);
       setExpenses((prev) =>
-        prev.map((e) => (e.id === expenseId ? { ...e, ...data, updatedAt: new Date().toISOString() } : e))
+        prev.map((exp) => (exp.id === expenseId ? { ...exp, ...data, updatedAt: new Date().toISOString() } : exp))
       );
       success("Expense updated.");
     } catch (e: any) {
@@ -494,16 +573,17 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     if (!activeYatra) return;
+
     try {
       await deleteExpenseFromDb(activeYatra.id, expenseId);
       setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
-      success("Expense entry removed.");
+      success("Expense record deleted.");
     } catch (e: any) {
       error(e?.message || "Failed to delete expense.");
     }
   };
 
-  // ---------------- SAHAYAK ACTIONS (Nested: yatras/{yatraId}/staff/{uid}) ----------------
+  // ---------------- SAHAYAK ACTIONS ----------------
   const addNewSahayak = async (data: {
     uid?: string;
     name: string;
@@ -551,18 +631,121 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // ---------------- INVITATIONS ACTIONS ----------------
+  const sendSahayakInvitation = async (data: {
+    email: string;
+    name?: string;
+    phone?: string;
+    memberId?: string;
+  }): Promise<{
+    invitation: YatraInvitation;
+    inviteUrl: string;
+    emailSent?: boolean;
+    emailError?: string;
+  } | null> => {
+    if (!canManageSahayaks(userRole)) {
+      error("Permission Denied: Only the Organizer can send Sahayak invitations.");
+      return null;
+    }
+    if (!activeYatra) {
+      error("No active Yatra selected.");
+      return null;
+    }
+
+    try {
+      let emailSent = false;
+      let emailError: string | undefined = undefined;
+
+      try {
+        const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : undefined;
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
+
+        const res = await fetch("/api/invitations", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            yatraId: activeYatra.id,
+            yatraName: activeYatra.name,
+            organizerName: activeYatra.organizerName || user?.name || "Organizer",
+            email: data.email.trim().toLowerCase(),
+            name: data.name?.trim(),
+            phone: data.phone?.trim(),
+            memberId: data.memberId,
+          }),
+        });
+
+        const resJson = await res.json().catch(() => ({}));
+        if (res.ok && resJson.data) {
+          emailSent = Boolean(resJson.emailSent);
+          emailError = resJson.emailError;
+          const serverInv = resJson.data as YatraInvitation;
+          setInvitations((prev) => [serverInv, ...prev.filter((i) => i.id !== serverInv.id)]);
+          const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+          const finalUrl = resJson.inviteUrl || `${origin}/invite/${serverInv.token}`;
+          return {
+            invitation: serverInv,
+            inviteUrl: finalUrl,
+            emailSent,
+            emailError,
+          };
+        }
+      } catch (apiErr) {
+        console.warn("API invitation dispatch note:", apiErr);
+      }
+
+      // Fallback to client-side Firestore creation if API was unreachable
+      const result = await createYatraInvitation(activeYatra.id, {
+        email: data.email.trim().toLowerCase(),
+        name: data.name?.trim(),
+        phone: data.phone?.trim(),
+        memberId: data.memberId,
+        organizerName: activeYatra.organizerName || user?.name || "Organizer",
+        yatraName: activeYatra.name,
+      });
+
+      setInvitations((prev) => [result.invitation, ...prev.filter((i) => i.id !== result.invitation.id)]);
+      return {
+        invitation: result.invitation,
+        inviteUrl: result.inviteUrl,
+        emailSent: false,
+      };
+    } catch (e: any) {
+      error(e?.message || "Failed to generate Sahayak invitation.");
+      return null;
+    }
+  };
+
+  const cancelSahayakInvite = async (inviteId: string, token: string) => {
+    if (!canManageSahayaks(userRole)) {
+      error("Permission Denied: Only Organizer can cancel invitations.");
+      return;
+    }
+    if (!activeYatra) return;
+
+    try {
+      await cancelYatraInvitation(activeYatra.id, inviteId, token);
+      setInvitations((prev) => prev.filter((i) => i.id !== inviteId && i.token !== token));
+      success("Invitation cancelled.");
+    } catch (e: any) {
+      error(e?.message || "Failed to cancel invitation.");
+    }
+  };
+
   const refreshData = async () => {
     if (activeYatra?.id) {
-      const [mList, pList, eList, sList] = await Promise.all([
+      const [mList, pList, eList, sList, iList] = await Promise.all([
         fetchMembers(activeYatra.id),
         fetchPayments(activeYatra.id),
         fetchExpenses(activeYatra.id),
         fetchSahayaks(activeYatra.id),
+        fetchInvitations(activeYatra.id),
       ]);
       setMembers(mList);
       setPayments(pList);
       setExpenses(eList);
       setSahayaks(sList);
+      setInvitations(iList);
     }
   };
 
@@ -577,9 +760,12 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
     <YatraContext.Provider
       value={{
         activeYatra,
+        activeYatraId,
+        setActiveYatraId,
         yatras,
         loading,
         userRole,
+        roleLoading,
         isOrganizer,
         isSahayak,
         hasAccess,
@@ -587,6 +773,7 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
         payments,
         expenses,
         sahayaks,
+        invitations,
         summary,
         getMemberStatus,
         switchYatra,
@@ -603,6 +790,8 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
         removeExpense,
         addNewSahayak,
         removeSahayak,
+        sendSahayakInvitation,
+        cancelSahayakInvite,
         refreshData,
         resetToSeedData,
       }}

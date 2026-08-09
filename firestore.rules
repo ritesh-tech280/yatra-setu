@@ -35,7 +35,7 @@ service cloud.firestore {
     // Only user profile data. No global role stored here.
     // ----------------------------------------------------
     match /users/{userId} {
-      allow read: if isSignedIn();
+      allow read: if isSignedIn() && request.auth.uid == userId;
       allow create, update: if isSignedIn() && request.auth.uid == userId;
       allow delete: if false;
     }
