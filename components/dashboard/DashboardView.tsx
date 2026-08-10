@@ -59,7 +59,7 @@ export function DashboardView({
               <span>{activeYatra?.name || "Yatra Overview"}</span>
             </div>
             <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white">
-              Welcome, {user?.name || "Organizer"}
+              Welcome, {user?.name || "Admin"}
             </h1>
             <p className="text-slate-300 text-sm mt-1 max-w-xl">
               Live financial overview and transparent member ledger for your Travel group.

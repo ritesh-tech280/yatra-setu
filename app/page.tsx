@@ -100,10 +100,10 @@ export default function YatraApp() {
             🔒
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-amber-400">Yatra Access</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-amber-400">Trip Access</p>
             <h1 className="mt-2 text-2xl font-black">You are not a member of this Yatra</h1>
             <p className="mt-2 text-xs leading-5 text-slate-400">
-              You do not have organizer or sahayak permissions for &ldquo;{activeYatra.name}&rdquo;.
+              You do not have admin or manager permissions for &ldquo;{activeYatra.name}&rdquo;.
             </p>
           </div>
 
@@ -169,7 +169,7 @@ export default function YatraApp() {
                     <Sparkles className="w-3.5 h-3.5" /> Welcome, {user.name}
                   </span>
                   <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                    Create Your First Yatra
+                    Create Your First Trip/Event
                   </h2>
                   <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto">
                     Set up your pilgrimage or group travel route, travel dates, and standard per-person fare to begin tracking members and live finances.

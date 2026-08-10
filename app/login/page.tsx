@@ -119,14 +119,14 @@ export default function LoginPage() {
               <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-start gap-2.5">
                 <span className="text-amber-400 font-bold">👑</span>
                 <div>
-                  <div className="font-bold text-white">Adhyaksh / Organizer</div>
+                  <div className="font-bold text-white">Admin</div>
                   <div className="text-[11px] text-slate-400">Create trips, set fares, invite Sahayaks & export reports.</div>
                 </div>
               </div>
               <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-start gap-2.5">
                 <span className="text-emerald-400 font-bold">🤝</span>
                 <div>
-                  <div className="font-bold text-white">Sahayak / Co-organizer</div>
+                  <div className="font-bold text-white">Manager</div>
                   <div className="text-[11px] text-slate-400">Record cash/UPI payments & log on-trip expenses in real time.</div>
                 </div>
               </div>
@@ -200,7 +200,7 @@ export default function LoginPage() {
                             : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
                         }`}
                       >
-                        👑 Organizer
+                        👑 Admin
                       </button>
                       <button
                         type="button"

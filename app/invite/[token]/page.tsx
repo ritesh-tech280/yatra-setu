@@ -189,7 +189,7 @@ export default function InvitePage() {
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-black uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Co-Organizer Invitation</span>
+            <span>Manager Invitation</span>
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">

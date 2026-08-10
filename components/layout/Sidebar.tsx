@@ -37,7 +37,7 @@ export function Sidebar({ activeTab, onSelectTab, onCreateYatraClick }: SidebarP
     { id: "members", label: "Members Directory", icon: <Users className="w-5 h-5" /> },
     { id: "payments", label: "Payments Ledger", icon: <IndianRupee className="w-5 h-5" /> },
     { id: "expenses", label: "Expenses & Bills", icon: <Receipt className="w-5 h-5" /> },
-    { id: "sahayaks", label: "Sahayak / Co-organizer", icon: <ShieldCheck className="w-5 h-5" />, organizerOnly: true },
+    { id: "sahayaks", label: "Manager", icon: <ShieldCheck className="w-5 h-5" />, organizerOnly: true },
     { id: "report", label: "Final Report", icon: <FileSpreadsheet className="w-5 h-5" /> },
   ];
 

@@ -52,7 +52,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   return (
     <Modal
       title={isSignUp ? "Create Yatra Account" : "Sign In to YatraSetu"}
-      subtitle={isSignUp ? "Register as Organizer or Sahayak" : "Access your digital Yatra management portal"}
+      subtitle={isSignUp ? "Register as Admin or Manager" : "Access your digital Yatra management portal"}
       onClose={onClose}
       maxWidth="md"
     >
@@ -98,7 +98,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
                     }`}
                   >
-                    👑 Organizer
+                    👑 Admin
                   </button>
 
                   <button
@@ -128,7 +128,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="organizer@yatrasetu.com"
+                placeholder="admin@yatrasetu.com"
                 className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
               />
             </div>
@@ -172,7 +172,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
           >
             {isSignUp
               ? "Already have an account? Sign in here"
-              : "Need a new account? Register as Organizer or Sahayak"}
+              : "Need a new account? Register as Admin or Manager"}
           </button>
         </div>
       </div>

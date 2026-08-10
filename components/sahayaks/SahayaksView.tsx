@@ -203,7 +203,7 @@ export function SahayaksView() {
             </li>
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-              <span>Cannot add or remove other Sahayaks</span>
+              <span>Cannot add or remove other Managers</span>
             </li>
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
@@ -358,7 +358,7 @@ export function SahayaksView() {
                 {isOrganizer && (
                   <button
                     onClick={() => setSahayakToDelete(s.id || s.uid)}
-                    title="Remove Sahayak"
+                    title="Remove Manager"
                     className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition shrink-0 cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
