@@ -154,7 +154,7 @@ export function MobileNav({
             }`}
           >
             <ShieldCheck className="w-5 h-5" />
-            <span className="text-[10px]">Sahayak</span>
+            <span className="text-[10px]">Manager</span>
           </button>
         ) : (
           <button
