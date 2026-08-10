@@ -77,7 +77,7 @@ export function ExpensesView({ onAddExpense }: ExpensesViewProps) {
           className="py-3 px-5 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-extrabold text-xs md:text-sm shadow-md shadow-orange-950/20 active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer"
         >
           <Receipt className="w-4 h-4" />
-          <span>+ Add New Expense</span>
+          <span>Add New Expense</span>
         </button>
       </div>
 

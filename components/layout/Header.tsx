@@ -1,13 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import   { useState } from "react";
 import {
-  Plus,
   Receipt,
   IndianRupee,
   UserPlus,
   Settings,
-  Sparkles,
   ChevronDown,
   LogOut,
   RefreshCw,
@@ -15,7 +13,6 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useYatraData } from "@/context/YatraContext";
 import { RoleBadge } from "../common/Badge";
-import { inr } from "@/lib/calculations";
 import { canEditYatra, canAddPayment, canAddExpense, canAddMember } from "@/lib/permissions";
 
 interface HeaderProps {
@@ -78,7 +75,7 @@ export function Header({
                 className="hidden sm:flex items-center gap-1.5 py-2 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold shadow-sm transition cursor-pointer"
               >
                 <IndianRupee className="w-3.5 h-3.5" />
-                <span>+ Payment</span>
+                <span>Payment</span>
               </button>
             )}
 
@@ -88,7 +85,7 @@ export function Header({
                 className="hidden sm:flex items-center gap-1.5 py-2 px-3.5 rounded-xl bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white text-xs font-bold shadow-sm transition cursor-pointer"
               >
                 <Receipt className="w-3.5 h-3.5" />
-                <span>+ Expense</span>
+                <span>Expense</span>
               </button>
             )}
 
@@ -98,7 +95,7 @@ export function Header({
                 className="hidden md:flex items-center gap-1.5 py-2 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-slate-950 text-xs font-bold shadow-sm transition cursor-pointer"
               >
                 <UserPlus className="w-3.5 h-3.5" />
-                <span>+ Member</span>
+                <span>Member</span>
               </button>
             )}
 
@@ -162,7 +159,7 @@ export function Header({
                       : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                   }`}
                 >
-                  <span>👑 Organizer</span>
+                  <span>👑 Admin</span>
                   {isOrganizer && <span className="text-amber-600">✓</span>}
                 </button>
 
@@ -177,7 +174,7 @@ export function Header({
                       : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                   }`}
                 >
-                  <span>🤝 Co-Organizer</span>
+                  <span>🤝 Manager</span>
                   {!isOrganizer && <span className="text-emerald-600">✓</span>}
                 </button>
               </div>

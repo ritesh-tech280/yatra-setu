@@ -79,7 +79,7 @@ export function PaymentsView({ onAddPayment }: PaymentsViewProps) {
           className="py-3 px-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-extrabold text-xs md:text-sm shadow-md shadow-emerald-900/20 active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer"
         >
           <IndianRupee className="w-4 h-4" />
-          <span>+ Record Payment</span>
+          <span>Record Payment</span>
         </button>
       </div>
 

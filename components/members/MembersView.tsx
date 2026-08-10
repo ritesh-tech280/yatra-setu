@@ -1,20 +1,16 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import  { useState, useMemo } from "react";
 import {
-  Users,
   Search,
   UserPlus,
   Phone,
-  MapPin,
   IndianRupee,
   Share2,
   ChevronRight,
-  Filter,
   CheckCircle2,
   Clock,
   AlertCircle,
-  FileSpreadsheet,
 } from "lucide-react";
 import { useYatraData } from "@/context/YatraContext";
 import { StatusBadge } from "../common/Badge";
@@ -105,7 +101,7 @@ export function MembersView({ onAddPaymentForMember }: MembersViewProps) {
           className="py-3 px-5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-extrabold text-xs md:text-sm shadow-md shadow-orange-600/20 active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer"
         >
           <UserPlus className="w-4 h-4" />
-          <span>+ Add New Member</span>
+          <span>Add New Member</span>
         </button>
       </div>
 

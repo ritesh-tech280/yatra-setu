@@ -116,7 +116,7 @@ export function ReportView() {
                   <span>Dates: {activeYatra?.startDate} to {activeYatra?.endDate}</span>
                 </span>
                 <span>•</span>
-                <span>Organizer: <strong>{activeYatra?.organizerName}</strong></span>
+                <span>Admin: <strong>{activeYatra?.organizerName}</strong></span>
               </div>
             </div>
 
@@ -344,13 +344,13 @@ export function ReportView() {
         <div className="pt-8 border-t border-slate-300 grid grid-cols-2 sm:grid-cols-3 gap-8 text-center text-xs">
           <div>
             <div className="h-12 border-b border-slate-400 border-dashed" />
-            <p className="font-bold text-slate-800 mt-2">{activeYatra?.organizerName || "Organizer"}</p>
-            <p className="text-[10px] text-slate-500 uppercase">Organizer</p>
+            <p className="font-bold text-slate-800 mt-2">{activeYatra?.organizerName || "Admin"}</p>
+            <p className="text-[10px] text-slate-500 uppercase">Admin</p>
           </div>
 
           <div>
             <div className="h-12 border-b border-slate-400 border-dashed" />
-            <p className="font-bold text-slate-800 mt-2">Co-Organizer</p>
+            <p className="font-bold text-slate-800 mt-2">Manager</p>
             <p className="text-[10px] text-slate-500 uppercase">Verification</p>
           </div>
 

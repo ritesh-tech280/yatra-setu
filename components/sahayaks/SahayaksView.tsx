@@ -2,21 +2,16 @@
 
 import React, { useState } from "react";
 import {
-  ShieldCheck,
   UserPlus,
   Trash2,
   Phone,
   Mail,
   Calendar,
   Check,
-  X,
   Lock,
-  Sparkles,
-  User,
   Copy,
   CheckCheck,
   Share2,
-  ExternalLink,
   Clock,
   Send,
   AlertCircle,
@@ -28,7 +23,6 @@ import { RoleBadge } from "../common/Badge";
 import { formatDate } from "@/lib/utils";
 import { canManageSahayaks } from "@/lib/permissions";
 import { useToast } from "@/context/ToastContext";
-import type { YatraInvitation } from "@/types/yatra";
 
 export function SahayaksView() {
   const {
@@ -123,7 +117,7 @@ export function SahayaksView() {
 
   const handleShareWhatsApp = (url: string, recipientName?: string) => {
     const text = encodeURIComponent(
-      `Jai Bhole! ${recipientName ? recipientName + ", you" : "You"} have been invited to join "${activeYatra?.name || "Kanwar Yatra"}" as a Sahayak (Co-Organizer). Accept invitation and access live dashboard here: ${url}`
+      ` ${recipientName ? recipientName + ", you" : "You"} have been invited to join "${activeYatra?.name || "Kanwar Yatra"}" as a Manager. Accept invitation and access live dashboard here: ${url}`
     );
     window.open(`https://wa.me/?text=${text}`, "_blank");
   };
@@ -137,7 +131,7 @@ export function SahayaksView() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white">
-              Co-Organizers (Sahayaks)
+              Managers
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
               {sahayaks.length} Active
@@ -149,7 +143,7 @@ export function SahayaksView() {
             )}
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Empower trusted group members to collect payments and log expenses alongside the Organizer.
+            Empower trusted group members to collect payments and log expenses alongside the Admin.
           </p>
         </div>
 
@@ -159,7 +153,7 @@ export function SahayaksView() {
             className="py-3 px-5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-extrabold text-xs md:text-sm shadow-md shadow-orange-600/20 active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer"
           >
             <UserPlus className="w-4 h-4" />
-            <span>+ Assign New Sahayak</span>
+            <span>Assign New Manager</span>
           </button>
         )}
       </div>
@@ -170,7 +164,7 @@ export function SahayaksView() {
         <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-3xl p-5 space-y-3">
           <div className="flex items-center gap-2 text-emerald-900 dark:text-emerald-300 font-extrabold text-xs uppercase tracking-wider">
             <Check className="w-4 h-4 text-emerald-600" />
-            <span>Sahayak Permissions</span>
+            <span>Manager Permissions</span>
           </div>
           <ul className="space-y-2 text-xs text-emerald-950 dark:text-emerald-200">
             <li className="flex items-center gap-2">
@@ -183,7 +177,7 @@ export function SahayaksView() {
             </li>
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>Add & manage Yatra expenses with their name as payer</span>
+              <span>Add & manage Trip expenses with their name as payer</span>
             </li>
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -201,11 +195,11 @@ export function SahayaksView() {
           <ul className="space-y-2 text-xs text-rose-950 dark:text-rose-200">
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-              <span>Cannot delete the primary Yatra group</span>
+              <span>Cannot delete the primary Travel group</span>
             </li>
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-              <span>Cannot remove or modify the Organizer</span>
+              <span>Cannot remove or modify the Admin</span>
             </li>
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
@@ -213,7 +207,7 @@ export function SahayaksView() {
             </li>
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-              <span>Cannot alter the standard per-person Yatra fare</span>
+              <span>Cannot alter the standard per-person Trip fare</span>
             </li>
           </ul>
         </div>
@@ -224,7 +218,7 @@ export function SahayaksView() {
         <div className="space-y-3">
           <h3 className="text-xs font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400 px-1 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
-            <span>Pending Sahayak Invitations ({pendingInvitations.length})</span>
+            <span>Pending Manager Invitations ({pendingInvitations.length})</span>
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -294,7 +288,7 @@ export function SahayaksView() {
       {/* Sahayaks List */}
       <div className="space-y-3">
         <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 px-1">
-          Active Sahayaks for {activeYatra?.name}
+          Active Manager for {activeYatra?.name}
         </h3>
 
         {sahayaks.length === 0 ? (
@@ -303,17 +297,17 @@ export function SahayaksView() {
               🤝
             </div>
             <h3 className="font-bold text-slate-800 dark:text-white text-base">
-              No Sahayaks assigned yet
+              No Manager assigned yet
             </h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              As the Organizer, you can assign co-organizers via email invitation to help manage member collections and expenses.
+              As the Admin, you can assign Manager via email invitation to help manage member collections and expenses.
             </p>
             {isOrganizer && (
               <button
                 onClick={() => setShowAddModal(true)}
                 className="mt-2 py-2 px-4 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold hover:bg-amber-600 transition cursor-pointer"
               >
-                + Assign Sahayak
+                + Assign Manager
               </button>
             )}
           </div>
@@ -331,7 +325,7 @@ export function SahayaksView() {
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                        {s.name || "Assigned Sahayak"}
+                        {s.name || "Assigned Manager"}
                       </h3>
                       <RoleBadge role="sahayak" />
                     </div>
@@ -379,8 +373,8 @@ export function SahayaksView() {
       {/* Add Sahayak Modal */}
       {showAddModal && (
         <Modal
-          title="Send Sahayak Invitation"
-          subtitle="Invite a co-organizer via email or shareable link"
+          title="Send Manager Invitation"
+          subtitle="Invite a Manager via email or shareable link"
           onClose={() => setShowAddModal(false)}
           maxWidth="md"
         >
@@ -407,7 +401,7 @@ export function SahayaksView() {
 
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                Sahayak Full Name <span className="text-rose-500">*</span>
+                Manager Full Name <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -442,11 +436,11 @@ export function SahayaksView() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="e.g. rahul.sahayak@gmail.com"
+                placeholder="rahul.manager@gmail.com"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
               />
               <p className="text-[11px] text-slate-500 mt-1">
-                An invitation link will be created. The recipient can accept it to instantly become a Sahayak for this Yatra.
+                An invitation link will be created. The recipient can accept it to instantly become a Manager for this Trip.
               </p>
             </div>
 
@@ -463,7 +457,7 @@ export function SahayaksView() {
                 disabled={loading || !name.trim() || !phone.trim() || !email.trim()}
                 className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-sm font-bold shadow-md shadow-orange-950/20 active:scale-95 transition cursor-pointer disabled:opacity-50"
               >
-                {loading ? "Creating..." : "Send Sahayak Invitation"}
+                {loading ? "Creating..." : "Send Manager Invitation"}
               </button>
             </div>
           </form>
@@ -474,7 +468,7 @@ export function SahayaksView() {
       {inviteResult && (
         <Modal
           title="Invitation Ready!"
-          subtitle={`Sahayak invite link generated for ${inviteResult.email}`}
+          subtitle={`Manager invite link generated for ${inviteResult.email}`}
           onClose={() => setInviteResult(null)}
           maxWidth="md"
         >
@@ -495,7 +489,7 @@ export function SahayaksView() {
                   <p className="mt-0.5">
                     {inviteResult.emailError
                       ? `Email note: ${inviteResult.emailError}. You can share the link below directly.`
-                      : "Please copy or share the direct invite link with the Sahayak."}
+                      : "Please copy or share the direct invite link with the Manager."}
                   </p>
                 </div>
               </div>
@@ -547,8 +541,8 @@ export function SahayaksView() {
       {/* Remove Sahayak Confirmation */}
       <ConfirmationModal
         isOpen={Boolean(sahayakToDelete)}
-        title="Remove Sahayak"
-        message="Are you sure you want to remove this Sahayak from the Yatra? They will no longer be able to record payments or expenses."
+        title="Remove Manager"
+        message="Are you sure you want to remove this Manager from the Trip? They will no longer be able to record payments or expenses."
         confirmLabel="Remove"
         onConfirm={() => {
           if (sahayakToDelete) {
@@ -562,7 +556,7 @@ export function SahayaksView() {
       {/* Cancel Invite Confirmation */}
       <ConfirmationModal
         isOpen={Boolean(inviteToCancel)}
-        title="Cancel Sahayak Invitation"
+        title="Cancel Manager Invitation"
         message="Are you sure you want to cancel this pending invitation? The recipient will not be able to use this link to join."
         confirmLabel="Cancel Invite"
         onConfirm={() => {

@@ -1,13 +1,10 @@
 "use client";
 
-import React from "react";
 import {
   Users,
   IndianRupee,
   Receipt,
-  Scale,
   ArrowUpRight,
-  ArrowDownRight,
   CheckCircle2,
   Clock,
   AlertCircle,
@@ -65,7 +62,7 @@ export function DashboardView({
               Welcome, {user?.name || "Organizer"}
             </h1>
             <p className="text-slate-300 text-sm mt-1 max-w-xl">
-              Live financial overview and transparent member ledger for your Yatra group.
+              Live financial overview and transparent member ledger for your Travel group.
             </p>
           </div>
 
@@ -75,21 +72,21 @@ export function DashboardView({
               className="py-3 px-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-extrabold text-xs md:text-sm shadow-lg shadow-emerald-950/30 active:scale-95 transition flex items-center gap-2 cursor-pointer"
             >
               <IndianRupee className="w-4 h-4" />
-              <span>+ Record Payment</span>
+              <span>Record Payment</span>
             </button>
             <button
               onClick={onAddExpense}
               className="py-3 px-4 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs md:text-sm border border-white/20 active:scale-95 transition flex items-center gap-1.5 cursor-pointer"
             >
               <Receipt className="w-4 h-4" />
-              <span>+ Expense</span>
+              <span>Expense</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Primary KPI Grid */}
-      <div className="grid grid-cols-2   lg:grid-cols-3 xl:grid-cols-3 gap-3.5 md:gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-3 gap-3.5 md:gap-4">
         {/* Total Members */}
         <StatCard
           label="Total Members"

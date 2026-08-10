@@ -37,7 +37,7 @@ export function Sidebar({ activeTab, onSelectTab, onCreateYatraClick }: SidebarP
     { id: "members", label: "Members Directory", icon: <Users className="w-5 h-5" /> },
     { id: "payments", label: "Payments Ledger", icon: <IndianRupee className="w-5 h-5" /> },
     { id: "expenses", label: "Expenses & Bills", icon: <Receipt className="w-5 h-5" /> },
-    { id: "sahayaks", label: "Sahayaks (Team)", icon: <ShieldCheck className="w-5 h-5" />, organizerOnly: true },
+    { id: "sahayaks", label: "Manager", icon: <ShieldCheck className="w-5 h-5" />, organizerOnly: true },
     { id: "report", label: "Final Report", icon: <FileSpreadsheet className="w-5 h-5" /> },
   ];
 
@@ -70,7 +70,7 @@ export function Sidebar({ activeTab, onSelectTab, onCreateYatraClick }: SidebarP
         <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3.5 relative group hover:border-amber-500/40 transition-colors">
           <div className="flex items-center justify-between text-[11px] font-bold text-amber-400 uppercase tracking-wider mb-1.5">
             <span className="flex items-center gap-1">
-              <Sparkles className="w-3 h-3" /> Active Yatra
+              <Sparkles className="w-3 h-3" /> Active Trip
             </span>
             <span className="text-slate-400 font-normal">
               Fare: <strong className="text-white">{inr(activeYatra?.fare || 0)}</strong>
@@ -117,7 +117,7 @@ export function Sidebar({ activeTab, onSelectTab, onCreateYatraClick }: SidebarP
               onClick={onCreateYatraClick}
               className="mt-3 w-full py-1.5 px-3 rounded-lg bg-slate-700/50 hover:bg-amber-500/20 text-xs font-semibold text-amber-300 hover:text-amber-200 border border-slate-600/50 hover:border-amber-500/40 transition flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <PlusCircle className="w-3.5 h-3.5" /> + Create New Yatra
+              <PlusCircle className="w-3.5 h-3.5" /> + Create New Trip
             </button>
           )}
         </div>
@@ -167,7 +167,7 @@ export function Sidebar({ activeTab, onSelectTab, onCreateYatraClick }: SidebarP
                 : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
             }`}
           >
-            Organizer
+           Admin
           </button>
           <button
             onClick={loginDemoSahayak}
@@ -177,7 +177,7 @@ export function Sidebar({ activeTab, onSelectTab, onCreateYatraClick }: SidebarP
                 : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
             }`}
           >
-            Sahayak
+            Manager
           </button>
         </div>
       </div>
