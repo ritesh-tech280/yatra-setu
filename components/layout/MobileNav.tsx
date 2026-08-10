@@ -20,6 +20,7 @@ interface MobileNavProps {
   onAddPayment: () => void;
   onAddExpense: () => void;
   onAddMember: () => void;
+  onAddSahayak: () => void ;
 }
 
 export function MobileNav({
@@ -28,6 +29,7 @@ export function MobileNav({
   onAddPayment,
   onAddExpense,
   onAddMember,
+  onAddSahayak,
 }: MobileNavProps) {
   const [showQuickActions, setShowQuickActions] = useState(false);
 
@@ -140,28 +142,15 @@ export function MobileNav({
 
         {/* Payments */}
         <button
-          onClick={() => onSelectTab("payments")}
+          onClick={() => onSelectTab("sahayaks")}
           className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl transition cursor-pointer ${
-            activeTab === "payments"
+            activeTab === "sahayaks"
               ? "text-amber-600 dark:text-amber-400 font-extrabold scale-105"
               : "text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900"
           }`}
         >
-          <IndianRupee className="w-5 h-5" />
-          <span className="text-[10px]">Payments</span>
-        </button>
-
-        {/* Expenses */}
-        <button
-          onClick={() => onSelectTab("expenses")}
-          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl transition cursor-pointer ${
-            activeTab === "expenses"
-              ? "text-amber-600 dark:text-amber-400 font-extrabold scale-105"
-              : "text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900"
-          }`}
-        >
-          <Receipt className="w-5 h-5" />
-          <span className="text-[10px]">Expenses</span>
+          <ShieldCheck className="w-5 h-5" />
+          <span className="text-[10px]">Sahayak</span>
         </button>
 
         {/* Report */}
