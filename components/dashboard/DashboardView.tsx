@@ -56,7 +56,7 @@ export function DashboardView({
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold mb-3">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>{activeYatra?.name || "Yatra Overview"}</span>
+              <span>{activeYatra?.name || "Overview"}</span>
             </div>
             <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white">
               Welcome, {user?.name || "Admin"}

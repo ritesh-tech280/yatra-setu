@@ -98,11 +98,11 @@ export default function LoginPage() {
         <div className="lg:col-span-6 space-y-6">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5" />
-            Digital Ledger for Group Yatras & Tours
+            Digital Ledger for Group Event & Tours
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight tracking-tight">
-            Transparent Financial Ledger for <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300">Yatra Groups</span>
+            Transparent Financial Ledger for <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300">Travel Groups</span>
           </h1>
 
           <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
@@ -337,7 +337,7 @@ export default function LoginPage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-800/60 bg-slate-950/80 py-4 text-center text-xs text-slate-400">
-        <p>© 2026 YatraSetu • Digital Group Ledger System</p>
+        <p>© 2026 YatraSetu • Digital Group Ledger System • By Ritesh Kumar</p>
       </footer>
     </div>
   );

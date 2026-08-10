@@ -133,7 +133,7 @@ export function ReportView() {
         {/* Section 1: Executive Yatra Summary (4 KPI Boxes) */}
         <div>
           <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-3">
-            1. Executive Yatra Summary
+            1. Executive Summary
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
             {/* Expected Collection */}
@@ -328,7 +328,7 @@ export function ReportView() {
               </div>
 
               <div className="flex items-center justify-between py-1 border-b border-slate-50">
-                <span className="text-slate-600">Total Yatra Expenses</span>
+                <span className="text-slate-600">Total Expenses</span>
                 <span className="font-bold text-orange-700">{inr(summary.expenses)}</span>
               </div>
 
