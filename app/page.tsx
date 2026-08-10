@@ -43,6 +43,7 @@ export default function YatraApp() {
   const [preselectedMember, setPreselectedMember] = useState<Member | null>(null);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [isAddSahayaks, setIsAddSahayaks] = useState(false)
   const [isCreateYatraOpen, setIsCreateYatraOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -240,6 +241,7 @@ export default function YatraApp() {
           onAddPayment={handleOpenGeneralPayment}
           onAddExpense={() => setIsAddExpenseOpen(true)}
           onAddMember={() => setIsAddMemberOpen(true)}
+          onAddSahayak={() => setIsAddSahayaks(true)}
         />
       )}
 
