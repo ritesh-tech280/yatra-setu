@@ -110,7 +110,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
                     }`}
                   >
-                    🤝 Sahayak
+                    🤝 Manager
                   </button>
                 </div>
               </div>

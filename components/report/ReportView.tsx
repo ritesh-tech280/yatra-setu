@@ -62,7 +62,7 @@ export function ReportView() {
               Final Financial Audit Report
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">
-              Audited Summary
+              Summary
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -207,8 +207,8 @@ export function ReportView() {
             </span>
           </div>
 
-          <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
-            <table className="w-full text-left text-xs border-collapse">
+          <div className="border w-full overflow-x-auto border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+            <table className="w-full min-w-200 text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200">
                   <th className="py-3 px-4 w-12 text-center">#</th>

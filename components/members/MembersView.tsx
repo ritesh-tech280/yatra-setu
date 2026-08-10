@@ -138,7 +138,7 @@ export function MembersView({ onAddPaymentForMember }: MembersViewProps) {
             }`}
           >
             <span>All Members</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-700 text-[10px]">
+            <span className="px-1.5 py-0.2 rounded-full bg-slate-600 dark:bg-slate-200 text-[10px]">
               {counts.all}
             </span>
           </button>

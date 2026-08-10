@@ -131,7 +131,7 @@ export function AddMemberModal({ member, onClose, onSubmit }: AddMemberModalProp
             className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-sm font-bold shadow-md shadow-orange-600/20 active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer"
           >
             {isEditing ? <Save className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-            <span>{loading ? "Saving..." : isEditing ? "Save Changes" : "Register Member"}</span>
+            <span>{loading ? "Saving..." : isEditing ? "Save Changes" : "Add Member"}</span>
           </button>
         </div>
       </form>
