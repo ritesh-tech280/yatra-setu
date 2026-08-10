@@ -211,7 +211,7 @@ export default function LoginPage() {
                             : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
                         }`}
                       >
-                        🤝 Sahayak
+                        🤝 Manager
                       </button>
                     </div>
                   </div>
@@ -228,7 +228,7 @@ export default function LoginPage() {
                         required
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. Ramesh Sharma"
+                        placeholder="Enter name"
                         className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
                       />
                     </div>
@@ -245,7 +245,7 @@ export default function LoginPage() {
                         type="tel"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        placeholder="e.g. 9876543210"
+                        placeholder="9876543210"
                         className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
                       />
                     </div>
@@ -265,7 +265,7 @@ export default function LoginPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="e.g. organizer@yatrasetu.com"
+                    placeholder="you@example.com"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
                   />
                 </div>
