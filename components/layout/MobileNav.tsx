@@ -102,11 +102,11 @@ export function MobileNav({
       )}
 
       {/* Fixed Bottom Nav Bar */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 py-1.5 flex items-center justify-around shadow-lg">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-1.5 py-1.5 flex item-center justify-around shadow-lg">
         {/* Dashboard */}
         <button
           onClick={() => onSelectTab("dashboard")}
-          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl transition cursor-pointer ${
+          className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-xl transition cursor-pointer ${
             activeTab === "dashboard"
               ? "text-amber-600 dark:text-amber-400 font-extrabold scale-105"
               : "text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900"
@@ -119,7 +119,7 @@ export function MobileNav({
         {/* Members */}
         <button
           onClick={() => onSelectTab("members")}
-          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl transition cursor-pointer ${
+          className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-xl transition cursor-pointer ${
             activeTab === "members"
               ? "text-amber-600 dark:text-amber-400 font-extrabold scale-105"
               : "text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900"
@@ -143,7 +143,7 @@ export function MobileNav({
         {/* Payments */}
         <button
           onClick={() => onSelectTab("sahayaks")}
-          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl transition cursor-pointer ${
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition cursor-pointer ${
             activeTab === "sahayaks"
               ? "text-amber-600 dark:text-amber-400 font-extrabold scale-105"
               : "text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900"
@@ -156,7 +156,7 @@ export function MobileNav({
         {/* Report */}
         <button
           onClick={() => onSelectTab("report")}
-          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl transition cursor-pointer ${
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition cursor-pointer ${
             activeTab === "report"
               ? "text-amber-600 dark:text-amber-400 font-extrabold scale-105"
               : "text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900"
