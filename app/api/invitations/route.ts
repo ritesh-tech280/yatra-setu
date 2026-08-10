@@ -78,7 +78,7 @@ export async function POST(request: Request) {
       );
     }
 
-    let callerUid = "org-1";
+    let callerUid = "organizer";
 
     // If Firebase Admin and Auth header present, verify token
     const authHeader = request.headers.get("authorization");

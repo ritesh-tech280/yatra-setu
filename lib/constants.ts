@@ -35,21 +35,3 @@ export const PAYMENT_STATUS_MAP: Record<PaymentStatus, { label: string; badgeCla
     bgClass: "bg-rose-50 text-rose-700",
   },
 };
-
-export const DEMO_ORGANIZER = {
-  id: "org-1",
-  name: "Organizer",
-  email: "organizer@yatrasetu.com",
-  phone: "9876543210",
-  role: "organizer" as const,
-  createdAt: "2026-07-01T00:00:00.000Z",
-};
-
-export const DEMO_SAHAYAK = {
-  id: "sahayak-1",
-  name: "Co-Organizer",
-  email: "sahayak@yatrasetu.com",
-  phone: "9876524011",
-  role: "sahayak" as const,
-  createdAt: "2026-07-05T00:00:00.000Z",
-};

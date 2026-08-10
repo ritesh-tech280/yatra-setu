@@ -42,6 +42,7 @@ import {
   createYatraInvitation,
   cancelYatraInvitation,
   getYatraRole,
+  clearLocalCache,
 } from "@/lib/firebase/firestoreService";
 import {
   canEditYatra,
@@ -149,35 +150,20 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const currentUid = user?.uid || user?.id;
     if (!currentUid) {
-      setUserRole("organizer");
+      setUserRole(user?.role === "sahayak" ? "sahayak" : "organizer");
       setRoleLoading(false);
       return;
     }
 
     if (!activeYatra) {
-      setUserRole("organizer");
+      setUserRole(user?.role === "sahayak" ? "sahayak" : "organizer");
       setRoleLoading(false);
       return;
     }
 
     // Direct check if currentUser is Organizer of active Yatra
-    if (
-      activeYatra.organizerId === currentUid ||
-      (currentUid === "org-1" && (!activeYatra.organizerId || activeYatra.organizerId === "org-1"))
-    ) {
+    if (activeYatra.organizerId === currentUid) {
       setUserRole("organizer");
-      setRoleLoading(false);
-      return;
-    }
-
-    // Demo role switch support
-    if (user?.role === "organizer" || user?.id === "org-1") {
-      setUserRole("organizer");
-      setRoleLoading(false);
-      return;
-    }
-    if (user?.role === "sahayak" || user?.id === "sahayak-1") {
-      setUserRole("sahayak");
       setRoleLoading(false);
       return;
     }
@@ -189,14 +175,14 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
         if (r === "no_access") {
           // If stored active yatra does not belong to user, clear it and allow creating/managing their own
           setActiveYatraId("");
-          setUserRole("organizer");
+          setUserRole(user?.role === "sahayak" ? "sahayak" : "organizer");
         } else {
           setUserRole(r);
         }
       })
       .catch(() => {
         setActiveYatraId("");
-        setUserRole("organizer");
+        setUserRole(user?.role === "sahayak" ? "sahayak" : "organizer");
       })
       .finally(() => setRoleLoading(false));
   }, [user, activeYatra]);
@@ -230,6 +216,20 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
         unsubscribe = listenToYatras((updated) => {
           const unique = Array.from(new Map(updated.map((y) => [y.id, y])).values());
           setYatras(unique);
+          setActiveYatraId((prevActiveId) => {
+            if (prevActiveId && unique.some((y) => y.id === prevActiveId)) {
+              return prevActiveId;
+            }
+            const nextActive = unique.length > 0 ? unique[0].id : "";
+            if (typeof window !== "undefined") {
+              if (nextActive) {
+                localStorage.setItem("yatrasetu_active_id", nextActive);
+              } else {
+                localStorage.removeItem("yatrasetu_active_id");
+              }
+            }
+            return nextActive;
+          });
         }, currentUid);
       } catch (err: any) {
         console.error("Error loading Yatras:", err);
@@ -324,7 +324,7 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
   const createNewYatra = async (
     data: Omit<Yatra, "id" | "createdAt" | "updatedAt">
   ): Promise<Yatra> => {
-    const currentUid = user?.uid || user?.id || "org-1";
+    const currentUid = user?.uid || user?.id || "organizer";
     const currentName = user?.name || "Organizer";
 
     const newYatra = await saveYatra({
@@ -364,10 +364,26 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
 
     try {
       await deleteYatraFromDb(yatraId);
-      setYatras((prev) => prev.filter((y) => y.id !== yatraId));
+      const remaining = yatras.filter((y) => y.id !== yatraId);
+      setYatras(remaining);
       if (activeYatraId === yatraId) {
-        const remaining = yatras.filter((y) => y.id !== yatraId);
-        setActiveYatraId(remaining[0]?.id || "");
+        const nextYatra = remaining.length > 0 ? remaining[0] : null;
+        const nextId = nextYatra ? nextYatra.id : "";
+        setActiveYatraId(nextId);
+        if (typeof window !== "undefined") {
+          if (nextId) {
+            localStorage.setItem("yatrasetu_active_id", nextId);
+          } else {
+            localStorage.removeItem("yatrasetu_active_id");
+          }
+        }
+        if (!nextYatra) {
+          setMembers([]);
+          setPayments([]);
+          setExpenses([]);
+          setSahayaks([]);
+          setInvitations([]);
+        }
       }
       success("Yatra deleted successfully.");
     } catch (e: any) {
@@ -473,7 +489,7 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const currentUid = user?.uid || user?.id || "org-1";
+      const currentUid = user?.uid || user?.id || "organizer";
       const newPayment = await savePayment({
         yatraId: activeYatra.id,
         memberId: data.memberId,
@@ -529,7 +545,7 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const currentUid = user?.uid || user?.id || "org-1";
+      const currentUid = user?.uid || user?.id || "organizer";
       const newExpense = await saveExpense({
         yatraId: activeYatra.id,
         category: data.category,
@@ -751,7 +767,17 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
 
   const resetToSeedData = () => {
     if (typeof window !== "undefined") {
-      localStorage.clear();
+      const currentUser = localStorage.getItem("yatrasetu_user");
+      const currentFirebaseUser = localStorage.getItem("yatrasetu_current_user");
+
+      clearLocalCache();
+
+      if (currentUser) {
+        localStorage.setItem("yatrasetu_user", currentUser);
+      }
+      if (currentFirebaseUser) {
+        localStorage.setItem("yatrasetu_current_user", currentFirebaseUser);
+      }
       window.location.reload();
     }
   };

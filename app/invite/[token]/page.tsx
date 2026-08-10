@@ -76,7 +76,7 @@ export default function InvitePage() {
         } catch {}
       }
 
-      const uid = activeUser?.id || (activeUser as any)?.uid || auth?.currentUser?.uid || "sahayak-1";
+      const uid = activeUser?.id || (activeUser as any)?.uid || auth?.currentUser?.uid || "sahayak";
 
       // 1. Call accept API
       const response = await fetch("/api/invitations/accept", {

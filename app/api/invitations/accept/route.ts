@@ -73,7 +73,7 @@ export async function POST(request: Request) {
       memberId: invitation.memberId,
       role: "sahayak",
       status: "active",
-      addedBy: invitation.invitedBy || "org-1",
+      addedBy: invitation.invitedBy || "organizer",
     });
 
     invitation.status = "accepted";

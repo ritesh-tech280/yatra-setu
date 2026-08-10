@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       expenseDate: expenseDate || new Date().toISOString().split("T")[0],
       paidBy: paidBy.trim(),
       description: description?.trim() || "",
-      createdBy: createdBy || "org-1",
+      createdBy: createdBy || "organizer",
     });
 
     return NextResponse.json({ success: true, data: expense }, { status: 201 });

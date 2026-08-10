@@ -28,7 +28,7 @@ export function CreateYatraModal({ onClose }: CreateYatraModalProps) {
   const [startDate, setStartDate] = useState("2026-08-10");
   const [endDate, setEndDate] = useState("2026-08-15");
   const [fare, setFare] = useState("2000");
-  const [organizerName, setOrganizerName] = useState(user?.name || "Ritesh Kumar");
+  const [organizerName, setOrganizerName] = useState(user?.name || "Organizer");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -45,7 +45,7 @@ export function CreateYatraModal({ onClose }: CreateYatraModalProps) {
         startDate,
         endDate,
         fare: Number(fare) || 2000,
-        organizerId: user?.id || "org-1",
+        organizerId: user?.uid || user?.id || "organizer",
         organizerName: organizerName.trim(),
         description: description.trim(),
         sahayakIds: [],

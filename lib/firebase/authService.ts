@@ -9,7 +9,6 @@ import {
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { auth, db, isFirebaseConfigured } from "./config";
 import type { UserProfile, UserRole } from "@/types/yatra";
-import { DEMO_ORGANIZER, DEMO_SAHAYAK } from "../constants";
 
 const LOCAL_STORAGE_USER_KEY = "yatrasetu_current_user";
 
@@ -52,7 +51,7 @@ export async function registerWithEmail(
     return userProfile;
   }
 
-  // Fallback demo mode
+  // Fallback local mode
   const localProfile: UserProfile = {
     id: `user-${Date.now()}`,
     name,
@@ -110,19 +109,13 @@ export async function loginWithEmail(
     return profile;
   }
 
-  // Fallback demo login
-  if (email.toLowerCase().includes("sahayak")) {
-    const profile = { ...DEMO_SAHAYAK };
-    if (typeof window !== "undefined") {
-      localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(profile));
-    }
-    return profile;
-  }
-
-  const profile = {
-    ...DEMO_ORGANIZER,
-    email,
+  const profile: UserProfile = {
+    id: `user-${Date.now()}`,
     name: email.split("@")[0],
+    email,
+    phone: "",
+    role: "organizer",
+    createdAt: new Date().toISOString(),
   };
   if (typeof window !== "undefined") {
     localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(profile));
@@ -159,26 +152,4 @@ export function getStoredUser(): UserProfile | null {
   } catch {
     return null;
   }
-}
-
-/**
- * Quick switch / demo login as Organizer
- */
-export function loginAsOrganizer(): UserProfile {
-  const profile = { ...DEMO_ORGANIZER };
-  if (typeof window !== "undefined") {
-    localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(profile));
-  }
-  return profile;
-}
-
-/**
- * Quick switch / demo login as Sahayak
- */
-export function loginAsSahayak(): UserProfile {
-  const profile = { ...DEMO_SAHAYAK };
-  if (typeof window !== "undefined") {
-    localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(profile));
-  }
-  return profile;
 }

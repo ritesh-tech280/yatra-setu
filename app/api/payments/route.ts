@@ -43,7 +43,7 @@ export async function POST(req: Request) {
       paymentMethod: paymentMethod || "Cash",
       paymentDate: paymentDate || new Date().toISOString().split("T")[0],
       note: note?.trim() || "",
-      createdBy: createdBy || "org-1",
+      createdBy: createdBy || "organizer",
       createdByName: createdByName || "Organizer",
     });
 

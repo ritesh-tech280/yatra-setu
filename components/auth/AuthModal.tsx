@@ -19,7 +19,7 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const { login, register, loginDemoOrganizer, loginDemoSahayak } = useAuth();
+  const { login, register } = useAuth();
 
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
@@ -57,43 +57,6 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
       maxWidth="md"
     >
       <div className="space-y-4">
-        {/* Quick Demo Switchers */}
-        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-2">
-          <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" /> Fast Demo Access (1-Tap Login)
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                loginDemoOrganizer();
-                onClose();
-              }}
-              className="py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
-            >
-              <span>👑 As Organizer</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                loginDemoSahayak();
-                onClose();
-              }}
-              className="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
-            >
-              <span>🤝 As Sahayak</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="relative flex py-1 items-center">
-          <div className="flex-grow border-t border-slate-200 dark:border-slate-800" />
-          <span className="flex-shrink mx-3 text-[11px] font-semibold text-slate-400 uppercase">
-            Or with email credentials
-          </span>
-          <div className="flex-grow border-t border-slate-200 dark:border-slate-800" />
-        </div>
 
         {error && (
           <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-medium border border-rose-200">

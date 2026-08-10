@@ -13,6 +13,8 @@ import {
   X,
 } from "lucide-react";
 import type { NavTab } from "./Sidebar";
+import { useYatraData } from "@/context/YatraContext";
+import { canManageSahayaks } from "@/lib/permissions";
 
 interface MobileNavProps {
   activeTab: NavTab;
@@ -31,6 +33,7 @@ export function MobileNav({
   onAddMember,
   onAddSahayak,
 }: MobileNavProps) {
+  const { userRole } = useYatraData();
   const [showQuickActions, setShowQuickActions] = useState(false);
 
   return (
@@ -140,18 +143,32 @@ export function MobileNav({
           </button>
         </div>
 
-        {/* Payments */}
-        <button
-          onClick={() => onSelectTab("sahayaks")}
-          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition cursor-pointer ${
-            activeTab === "sahayaks"
-              ? "text-amber-600 dark:text-amber-400 font-extrabold scale-105"
-              : "text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900"
-          }`}
-        >
-          <ShieldCheck className="w-5 h-5" />
-          <span className="text-[10px]">Sahayak</span>
-        </button>
+        {/* Sahayak for Organizer, Payments for Sahayak */}
+        {canManageSahayaks(userRole) ? (
+          <button
+            onClick={() => onSelectTab("sahayaks")}
+            className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition cursor-pointer ${
+              activeTab === "sahayaks"
+                ? "text-amber-600 dark:text-amber-400 font-extrabold scale-105"
+                : "text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900"
+            }`}
+          >
+            <ShieldCheck className="w-5 h-5" />
+            <span className="text-[10px]">Sahayak</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => onSelectTab("payments")}
+            className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition cursor-pointer ${
+              activeTab === "payments"
+                ? "text-amber-600 dark:text-amber-400 font-extrabold scale-105"
+                : "text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900"
+            }`}
+          >
+            <IndianRupee className="w-5 h-5" />
+            <span className="text-[10px]">Payments</span>
+          </button>
+        )}
 
         {/* Report */}
         <button

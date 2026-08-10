@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { findDbUserByEmail } from "@/lib/firebase/serverDb";
-import { DEMO_ORGANIZER, DEMO_SAHAYAK } from "@/lib/constants";
 
 export async function POST(req: Request) {
   try {
@@ -9,14 +8,6 @@ export async function POST(req: Request) {
 
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
-    }
-
-    // Demo user shortcuts
-    if (email.includes("adhyaksh") || email === "adhyaksh@kanwaryatra.org") {
-      return NextResponse.json({ success: true, user: DEMO_ORGANIZER });
-    }
-    if (email.includes("sahayak") || email === "sahayak@kanwaryatra.org") {
-      return NextResponse.json({ success: true, user: DEMO_SAHAYAK });
     }
 
     const user = await findDbUserByEmail(email);
