@@ -20,6 +20,7 @@ import { CreateYatraModal } from "@/components/yatra/CreateYatraModal";
 import { YatraSettingsModal } from "@/components/yatra/YatraSettingsModal";
 import { AuthModal } from "@/components/auth/AuthModal";
 import type { Member } from "@/types/yatra";
+import { canManageSahayaks } from "@/lib/permissions";
 import { Loader2, PlusCircle, Sparkles, MapPin, Calendar, IndianRupee, Flag } from "lucide-react";
 
 export default function YatraApp() {
@@ -37,6 +38,13 @@ export default function YatraApp() {
   } = useYatraData();
 
   const [activeTab, setActiveTab] = useState<NavTab>("dashboard");
+
+  // Reset activeTab to dashboard if switching to Sahayak view while on organizer-only tab
+  useEffect(() => {
+    if (!canManageSahayaks(userRole) && activeTab === "sahayaks") {
+      setActiveTab("dashboard");
+    }
+  }, [userRole, activeTab]);
 
   // Modal control states
   const [isAddPaymentOpen, setIsAddPaymentOpen] = useState(false);

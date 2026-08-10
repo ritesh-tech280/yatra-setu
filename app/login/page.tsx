@@ -5,17 +5,14 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import type { UserRole } from "@/types/yatra";
-import { DEMO_ORGANIZER, DEMO_SAHAYAK } from "@/lib/constants";
 import {
   Compass,
   Mail,
   Lock,
   User,
   Phone,
-  Shield,
   ArrowRight,
   Sparkles,
-  CheckCircle2,
   Users,
   Receipt,
   FileSpreadsheet,
@@ -23,7 +20,7 @@ import {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, register, loginDemoOrganizer, loginDemoSahayak } = useAuth();
+  const { login, register } = useAuth();
   const { success, error } = useToast();
 
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -69,18 +66,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleDemoOrganizer = () => {
-    loginDemoOrganizer();
-    success("Logged in as Organizer");
-    router.push("/");
-  };
-
-  const handleDemoSahayak = () => {
-    loginDemoSahayak();
-    success("Logged in as Co-Organizer");
-    router.push("/");
-  };
-
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-amber-500 selection:text-slate-950 font-sans">
       {/* Top Navbar */}
@@ -124,40 +109,27 @@ export default function LoginPage() {
             Eliminate manual registers and physical diaries. Track member dues, partial deposits, real-time expenses, and generate instant printable balance sheets.
           </p>
 
-          {/* Quick Demo Login Cards */}
+          {/* Feature Highlights Card */}
           <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-3">
             <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider">
-              <Shield className="w-4 h-4" />
-              <span>Instant 1-Click Demo Evaluation</span>
+              <Sparkles className="w-4 h-4" />
+              <span>Core Ledger Features</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-              <button
-                type="button"
-                onClick={handleDemoOrganizer}
-                className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-amber-600/20 to-amber-500/10 hover:from-amber-600/30 hover:to-amber-500/20 border border-amber-500/40 text-amber-300 text-left transition-all group cursor-pointer"
-              >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 text-xs text-slate-300">
+              <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-start gap-2.5">
+                <span className="text-amber-400 font-bold">👑</span>
                 <div>
-                  <div className="text-xs font-bold flex items-center gap-1.5">
-                    <span>👑</span> Organizer
-                  </div>
-                  <div className="text-[10px] text-slate-400">Full group & financial control</div>
+                  <div className="font-bold text-white">Adhyaksh / Organizer</div>
+                  <div className="text-[11px] text-slate-400">Create trips, set fares, invite Sahayaks & export reports.</div>
                 </div>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform text-amber-400" />
-              </button>
-
-              <button
-                type="button"
-                onClick={handleDemoSahayak}
-                className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-blue-600/20 to-blue-500/10 hover:from-blue-600/30 hover:to-blue-500/20 border border-blue-500/40 text-blue-300 text-left transition-all group cursor-pointer"
-              >
+              </div>
+              <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-start gap-2.5">
+                <span className="text-emerald-400 font-bold">🤝</span>
                 <div>
-                  <div className="text-xs font-bold flex items-center gap-1.5">
-                    <span>🤝</span> Co-Organizer (Sahayak)
-                  </div>
-                  <div className="text-[10px] text-slate-400">Add members & record payments</div>
+                  <div className="font-bold text-white">Sahayak / Co-organizer</div>
+                  <div className="text-[11px] text-slate-400">Record cash/UPI payments & log on-trip expenses in real time.</div>
                 </div>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform text-blue-400" />
-              </button>
+              </div>
             </div>
           </div>
 

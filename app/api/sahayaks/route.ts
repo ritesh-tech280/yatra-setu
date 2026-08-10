@@ -30,7 +30,7 @@ export async function POST(req: Request) {
       phone: phone.trim(),
       email: email?.trim() || "",
       role: "sahayak",
-      addedBy: addedBy || "org-1",
+      addedBy: addedBy || "organizer",
     });
 
     return NextResponse.json({ success: true, data: sahayak }, { status: 201 });

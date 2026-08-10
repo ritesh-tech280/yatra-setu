@@ -43,7 +43,7 @@ export function RoleBadge({ role }: RoleBadgeProps) {
           : "bg-emerald-100 text-emerald-900 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800"
       }`}
     >
-      {isOrg ? "👑 Admin" : "🤝 Manager"}
+      {isOrg ? "👑 Admin" : "🤝 Sahayak / Co-organizer"}
     </span>
   );
 }

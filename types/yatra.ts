@@ -8,7 +8,7 @@ export interface UserProfile {
   name: string;
   email: string;
   phone?: string;
-  role?: UserRole; // Optional legacy / demo field; real role is computed per Yatra
+  role?: UserRole; // User profile role
   createdAt: string;
   updatedAt?: string;
 }

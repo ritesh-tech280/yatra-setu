@@ -28,8 +28,8 @@ export async function POST(req: Request) {
       startDate: startDate || new Date().toISOString().split("T")[0],
       endDate: endDate || new Date().toISOString().split("T")[0],
       fare: Number(fare),
-      organizerId: organizerId || "org-1",
-      organizerName: organizerName || "Adhyaksh",
+      organizerId: organizerId || "organizer",
+      organizerName: organizerName || "Organizer",
       description: description || "",
       sahayakIds: sahayakIds || [],
     });

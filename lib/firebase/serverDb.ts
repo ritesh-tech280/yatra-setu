@@ -11,7 +11,6 @@ import {
 } from "firebase/firestore";
 import { db as serverDb } from "@/config/firebaseConfig";
 import type { Yatra, Member, Payment, Expense, Sahayak, UserProfile, YatraInvitation } from "@/types/yatra";
-import { DEMO_ORGANIZER } from "../constants";
 
 export function cleanDocData<T extends Record<string, any>>(data: T): Record<string, any> {
   const result: Record<string, any> = {};
@@ -43,7 +42,7 @@ if (!globalStore.__YATRA_STORE__) {
     payments: [],
     expenses: [],
     sahayaks: [],
-    users: [DEMO_ORGANIZER],
+    users: [],
     invitations: [],
   };
 }
@@ -56,19 +55,32 @@ const memoryStore = globalStore.__YATRA_STORE__;
 
 // ---------------- YATRAS ----------------
 export async function getDbYatras(userId?: string): Promise<Yatra[]> {
+  let allYatras: Yatra[] = [];
   if (serverDb) {
     try {
       const col = collection(serverDb, "yatras");
-      const q = userId ? query(col, where("organizerId", "==", userId)) : col;
-      const snap = await getDocs(q);
+      const snap = await getDocs(col);
       if (!snap.empty) {
-        return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Yatra));
+        allYatras = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Yatra));
       }
     } catch (e) {
       console.warn("Firestore getDbYatras fallback:", e);
     }
   }
-  return memoryStore.yatras;
+  if (allYatras.length === 0) {
+    allYatras = memoryStore.yatras;
+  }
+
+  if (!userId) {
+    return allYatras;
+  }
+
+  return allYatras.filter(
+    (y) =>
+      y.organizerId === userId ||
+      (Array.isArray(y.sahayakIds) && y.sahayakIds.includes(userId)) ||
+      memoryStore.sahayaks.some((s) => s.yatraId === y.id && (s.uid === userId || s.id === userId))
+  );
 }
 
 export async function getDbYatraById(id: string): Promise<Yatra | null> {
@@ -96,7 +108,7 @@ export async function createDbYatra(data: Partial<Yatra>): Promise<Yatra> {
     startDate: data.startDate || now.split("T")[0],
     endDate: data.endDate || now.split("T")[0],
     fare: Number(data.fare) || 0,
-    organizerId: data.organizerId || "org-1",
+    organizerId: data.organizerId || "organizer",
     organizerName: data.organizerName || "Organizer",
     description: data.description || "",
     sahayakIds: data.sahayakIds || [],
@@ -135,6 +147,22 @@ export async function updateDbYatra(id: string, data: Partial<Yatra>): Promise<Y
 export async function deleteDbYatra(id: string): Promise<boolean> {
   if (serverDb) {
     try {
+      const subcollections = ["members", "payments", "expenses", "staff", "invitations"];
+      for (const sub of subcollections) {
+        try {
+          const subSnap = await getDocs(collection(serverDb, "yatras", id, sub));
+          for (const d of subSnap.docs) {
+            await deleteDoc(d.ref);
+          }
+        } catch {}
+      }
+      try {
+        const invQuery = query(collection(serverDb, "invitations"), where("yatraId", "==", id));
+        const invSnap = await getDocs(invQuery);
+        for (const d of invSnap.docs) {
+          await deleteDoc(d.ref);
+        }
+      } catch {}
       await deleteDoc(doc(serverDb, "yatras", id));
     } catch (e) {
       console.warn("Firestore deleteDbYatra fallback:", e);
@@ -145,6 +173,7 @@ export async function deleteDbYatra(id: string): Promise<boolean> {
   memoryStore.payments = memoryStore.payments.filter((p) => p.yatraId !== id);
   memoryStore.expenses = memoryStore.expenses.filter((e) => e.yatraId !== id);
   memoryStore.sahayaks = memoryStore.sahayaks.filter((s) => s.yatraId !== id);
+  memoryStore.invitations = memoryStore.invitations.filter((i) => i.yatraId !== id);
   return true;
 }
 
@@ -250,7 +279,7 @@ export async function createDbPayment(data: Partial<Payment>): Promise<Payment> 
     paymentMethod: data.paymentMethod || "Cash",
     paymentDate: data.paymentDate || now.split("T")[0],
     note: data.note || "",
-    createdBy: data.createdBy || "org-1",
+    createdBy: data.createdBy || "organizer",
     createdByName: data.createdByName || "Organizer",
     createdAt: now,
   };
@@ -307,7 +336,7 @@ export async function createDbExpense(data: Partial<Expense>): Promise<Expense> 
     expenseDate: data.expenseDate || now.split("T")[0],
     paidBy: data.paidBy || "Organizer",
     description: data.description || "",
-    createdBy: data.createdBy || "org-1",
+    createdBy: data.createdBy || "organizer",
     createdAt: now,
     updatedAt: now,
   };
@@ -388,7 +417,7 @@ export async function createDbSahayak(data: Partial<Sahayak>): Promise<Sahayak> 
     memberId: data.memberId || "",
     createdAt: now,
     addedAt: now,
-    addedBy: data.addedBy || "org-1",
+    addedBy: data.addedBy || "organizer",
   };
 
   if (serverDb && data.yatraId) {
@@ -464,7 +493,7 @@ export async function createDbInvitation(data: Partial<YatraInvitation>): Promis
     memberId: data.memberId || "",
     role: "sahayak",
     status: "pending",
-    invitedBy: data.invitedBy || "org-1",
+    invitedBy: data.invitedBy || "organizer",
     createdAt: now,
     expiresAt,
   };

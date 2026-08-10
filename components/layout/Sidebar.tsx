@@ -29,7 +29,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activeTab, onSelectTab, onCreateYatraClick }: SidebarProps) {
-  const { user, logout, loginDemoOrganizer, loginDemoSahayak } = useAuth();
+  const { user, logout } = useAuth();
   const { activeYatra, yatras, switchYatra, userRole, isOrganizer } = useYatraData();
 
   const allNavItems: { id: NavTab; label: string; icon: React.ReactNode; organizerOnly?: boolean }[] = [
@@ -37,7 +37,7 @@ export function Sidebar({ activeTab, onSelectTab, onCreateYatraClick }: SidebarP
     { id: "members", label: "Members Directory", icon: <Users className="w-5 h-5" /> },
     { id: "payments", label: "Payments Ledger", icon: <IndianRupee className="w-5 h-5" /> },
     { id: "expenses", label: "Expenses & Bills", icon: <Receipt className="w-5 h-5" /> },
-    { id: "sahayaks", label: "Manager", icon: <ShieldCheck className="w-5 h-5" />, organizerOnly: true },
+    { id: "sahayaks", label: "Sahayak / Co-organizer", icon: <ShieldCheck className="w-5 h-5" />, organizerOnly: true },
     { id: "report", label: "Final Report", icon: <FileSpreadsheet className="w-5 h-5" /> },
   ];
 
@@ -152,35 +152,6 @@ export function Sidebar({ activeTab, onSelectTab, onCreateYatraClick }: SidebarP
           );
         })}
       </nav>
-
-      {/* Quick Role Demo Switcher */}
-      <div className="p-3 mx-3 mb-2 bg-slate-800/50 border border-slate-700/50 rounded-xl">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-          Test Role Switching
-        </p>
-        <div className="grid grid-cols-2 gap-1.5">
-          <button
-            onClick={loginDemoOrganizer}
-            className={`py-1.5 px-2 rounded-lg text-xs font-semibold border transition cursor-pointer ${
-              isOrganizer
-                ? "bg-amber-500 text-slate-950 border-amber-400 shadow-xs"
-                : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
-            }`}
-          >
-           Admin
-          </button>
-          <button
-            onClick={loginDemoSahayak}
-            className={`py-1.5 px-2 rounded-lg text-xs font-semibold border transition cursor-pointer ${
-              !isOrganizer
-                ? "bg-emerald-500 text-slate-950 border-emerald-400 shadow-xs"
-                : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
-            }`}
-          >
-            Manager
-          </button>
-        </div>
-      </div>
 
       {/* User Footer Profile */}
       <div className="p-4 border-t border-slate-800 bg-slate-950/40 flex items-center justify-between">

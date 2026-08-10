@@ -11,7 +11,6 @@ import {
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/config/firebaseConfig";
 import type { UserProfile, UserRole } from "@/types/yatra";
-import { DEMO_ORGANIZER, DEMO_SAHAYAK } from "@/lib/constants";
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -21,8 +20,6 @@ interface AuthContextType {
   login: (email: string, pass?: string) => Promise<UserProfile>;
   register: (name: string, email: string, pass: string, role?: UserRole, phone?: string) => Promise<UserProfile>;
   logout: () => Promise<void>;
-  loginDemoOrganizer: () => void;
-  loginDemoSahayak: () => void;
   setUserRole: (role: UserRole) => void;
 }
 
@@ -103,16 +100,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, pass?: string): Promise<UserProfile> => {
     setLoading(true);
     try {
-      // Demo shortcuts
-      if (email === DEMO_ORGANIZER.email || (!pass && email.includes("adhyaksh"))) {
-        saveUserSession(DEMO_ORGANIZER);
-        return DEMO_ORGANIZER;
-      }
-      if (email === DEMO_SAHAYAK.email || (!pass && email.includes("sahayak"))) {
-        saveUserSession(DEMO_SAHAYAK);
-        return DEMO_SAHAYAK;
-      }
-
       // Real Firebase Authentication Sign In
       const userCredential = await signInWithEmailAndPassword(auth, email, pass || "password123");
       const firebaseUser = userCredential.user;
@@ -207,22 +194,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     saveUserSession(null);
   };
 
-  const loginDemoOrganizer = () => {
-    saveUserSession(DEMO_ORGANIZER);
-  };
-
-  const loginDemoSahayak = () => {
-    saveUserSession(DEMO_SAHAYAK);
-  };
-
   const setUserRole = (role: UserRole) => {
     if (!user) return;
     const updated = { ...user, role };
     saveUserSession(updated);
   };
 
-  const isOrganizer = user?.role === "organizer" || user?.id === "org-1";
-  const isSahayak = user?.role === "sahayak" || user?.id === "sahayak-1";
+  const isOrganizer = user?.role === "organizer";
+  const isSahayak = user?.role === "sahayak";
 
   return (
     <AuthContext.Provider
@@ -234,8 +213,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         register,
         logout,
-        loginDemoOrganizer,
-        loginDemoSahayak,
         setUserRole,
       }}
     >

@@ -28,7 +28,7 @@ export function Header({
   onAddMember,
   onOpenSettings,
 }: HeaderProps) {
-  const { user, logout, loginDemoOrganizer, loginDemoSahayak } = useAuth();
+  const { user, logout } = useAuth();
   const { activeYatra, userRole, isOrganizer, resetToSeedData } = useYatraData();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -144,42 +144,7 @@ export function Header({
                 </div>
               </div>
 
-              <div className="py-1">
-                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  Switch Active Role
-                </div>
-                <button
-                  onClick={() => {
-                    loginDemoOrganizer();
-                    setShowUserMenu(false);
-                  }}
-                  className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between cursor-pointer ${
-                    isOrganizer
-                      ? "bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 font-bold"
-                      : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  <span>👑 Admin</span>
-                  {isOrganizer && <span className="text-amber-600">✓</span>}
-                </button>
-
-                <button
-                  onClick={() => {
-                    loginDemoSahayak();
-                    setShowUserMenu(false);
-                  }}
-                  className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between cursor-pointer ${
-                    !isOrganizer
-                      ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 font-bold"
-                      : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  <span>🤝 Manager</span>
-                  {!isOrganizer && <span className="text-emerald-600">✓</span>}
-                </button>
-              </div>
-
-              <div className="pt-1 border-t border-slate-100 dark:border-slate-800 space-y-1">
+              <div className="pt-1 space-y-1">
                 <button
                   onClick={() => {
                     resetToSeedData();

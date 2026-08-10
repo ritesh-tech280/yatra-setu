@@ -129,16 +129,14 @@ export async function fetchYatras(userId?: string): Promise<Yatra[]> {
       const allYatras = Array.from(allYatrasMap.values());
 
       if (!userId) {
+        setLocal(LS_KEYS.YATRAS, allYatras);
         return allYatras;
       }
 
       // Filter Yatras where user is Organizer or Sahayak
       const accessibleMap = new Map<string, Yatra>();
       for (const y of allYatras) {
-        if (
-          y.organizerId === userId ||
-          (userId === "org-1" && (!y.organizerId || y.organizerId === "org-1"))
-        ) {
+        if (y.organizerId === userId) {
           accessibleMap.set(y.id, y);
           continue;
         }
@@ -154,7 +152,9 @@ export async function fetchYatras(userId?: string): Promise<Yatra[]> {
         } catch {}
       }
 
-      return Array.from(accessibleMap.values());
+      const accessible = Array.from(accessibleMap.values());
+      setLocal(LS_KEYS.YATRAS, accessible);
+      return accessible;
     } catch (e) {
       console.warn("Firestore fetchYatras error, using local storage:", e);
     }
@@ -169,7 +169,6 @@ export async function fetchYatras(userId?: string): Promise<Yatra[]> {
   return uniqueLocal.filter(
     (y) =>
       y.organizerId === userId ||
-      (userId === "org-1" && (!y.organizerId || y.organizerId === "org-1")) ||
       y.sahayakIds?.includes(userId)
   );
 }
@@ -183,23 +182,37 @@ export function listenToYatras(
     const col = collection(db, "yatras");
     return onSnapshot(
       col,
-      (snap) => {
+      async (snap) => {
         const map = new Map<string, Yatra>();
         snap.forEach((d) => {
           map.set(d.id, { id: d.id, ...d.data() } as Yatra);
         });
         const all = Array.from(map.values());
         if (!userId) {
+          setLocal(LS_KEYS.YATRAS, all);
           callback(all);
           return;
         }
-        const filtered = all.filter(
-          (y) =>
+
+        const accessible: Yatra[] = [];
+        for (const y of all) {
+          if (
             y.organizerId === userId ||
-            (userId === "org-1" && (!y.organizerId || y.organizerId === "org-1")) ||
-            y.sahayakIds?.includes(userId)
-        );
-        callback(filtered);
+            (Array.isArray(y.sahayakIds) && y.sahayakIds.includes(userId))
+          ) {
+            accessible.push(y);
+            continue;
+          }
+          try {
+            const staffDoc = await getDoc(doc(db, "yatras", y.id, "staff", userId));
+            if (staffDoc.exists() && staffDoc.data()?.status === "active") {
+              accessible.push(y);
+            }
+          } catch {}
+        }
+
+        setLocal(LS_KEYS.YATRAS, accessible);
+        callback(accessible);
       },
       (err) => {
         console.warn("Real-time yatras error:", err);
@@ -216,7 +229,7 @@ export async function saveYatra(yatraData: Omit<Yatra, "id" | "createdAt" | "upd
   const id = `yatra-${Date.now()}`;
   
   // Use currently authenticated user's UID as organizerId
-  const currentUid = auth?.currentUser?.uid || yatraData.organizerId || "org-1";
+  const currentUid = auth?.currentUser?.uid || yatraData.organizerId || "organizer";
 
   const newYatra: Yatra = {
     ...yatraData,
@@ -229,7 +242,7 @@ export async function saveYatra(yatraData: Omit<Yatra, "id" | "createdAt" | "upd
   if (isFirebaseConfigured && db) {
     try {
       const docRef = doc(db, "yatras", id);
-      await setDoc(docRef, newYatra);
+      await setDoc(docRef, cleanDocData(newYatra));
       const existing = getLocal<Yatra>(LS_KEYS.YATRAS, []);
       setLocal(LS_KEYS.YATRAS, [newYatra, ...existing.filter((y) => y.id !== id)]);
       return newYatra;
@@ -252,7 +265,7 @@ export async function updateYatraDetails(yatraId: string, updates: Partial<Yatra
   if (isFirebaseConfigured && db) {
     try {
       const docRef = doc(db, "yatras", yatraId);
-      await updateDoc(docRef, safeUpdates);
+      await updateDoc(docRef, cleanDocData(safeUpdates));
     } catch (e) {
       console.warn("Firestore updateYatra error:", e);
     }
@@ -266,16 +279,78 @@ export async function updateYatraDetails(yatraId: string, updates: Partial<Yatra
 export async function deleteYatraFromDb(yatraId: string): Promise<void> {
   if (isFirebaseConfigured && db) {
     try {
+      // 1. Delete all documents in subcollections
+      const subcollections = ["members", "payments", "expenses", "staff", "invitations"];
+      for (const sub of subcollections) {
+        try {
+          const subSnap = await getDocs(collection(db, "yatras", yatraId, sub));
+          const deletePromises = subSnap.docs.map((docSnap) => deleteDoc(docSnap.ref));
+          await Promise.all(deletePromises);
+        } catch (subErr) {
+          console.warn(`Error deleting subcollection ${sub} for yatra ${yatraId}:`, subErr);
+        }
+      }
+
+      // 2. Delete any root invitations for this yatra
+      try {
+        const invQuery = query(collection(db, "invitations"), where("yatraId", "==", yatraId));
+        const invSnap = await getDocs(invQuery);
+        const invDeletePromises = invSnap.docs.map((d) => deleteDoc(d.ref));
+        await Promise.all(invDeletePromises);
+      } catch (invErr) {
+        console.warn("Error deleting root invitations:", invErr);
+      }
+
+      // 3. Delete the root Yatra document
       await deleteDoc(doc(db, "yatras", yatraId));
     } catch (e) {
       console.warn("Firestore deleteYatra error:", e);
     }
   }
-  const existing = getLocal<Yatra>(LS_KEYS.YATRAS, []);
+
+  // 4. Wipe all local storage references associated with this yatra
+  const existingYatras = getLocal<Yatra>(LS_KEYS.YATRAS, []);
   setLocal(
     LS_KEYS.YATRAS,
-    existing.filter((y) => y.id !== yatraId)
+    existingYatras.filter((y) => y.id !== yatraId)
   );
+
+  const existingMembers = getLocal<Member>(LS_KEYS.MEMBERS, []);
+  setLocal(
+    LS_KEYS.MEMBERS,
+    existingMembers.filter((m) => m.yatraId !== yatraId)
+  );
+
+  const existingPayments = getLocal<Payment>(LS_KEYS.PAYMENTS, []);
+  setLocal(
+    LS_KEYS.PAYMENTS,
+    existingPayments.filter((p) => p.yatraId !== yatraId)
+  );
+
+  const existingExpenses = getLocal<Expense>(LS_KEYS.EXPENSES, []);
+  setLocal(
+    LS_KEYS.EXPENSES,
+    existingExpenses.filter((e) => e.yatraId !== yatraId)
+  );
+
+  const existingSahayaks = getLocal<YatraStaff>(LS_KEYS.SAHAYAKS, []);
+  setLocal(
+    LS_KEYS.SAHAYAKS,
+    existingSahayaks.filter((s) => s.yatraId !== yatraId)
+  );
+
+  const existingInvitations = getLocal<YatraInvitation>(LS_KEYS.INVITATIONS, []);
+  setLocal(
+    LS_KEYS.INVITATIONS,
+    existingInvitations.filter((i) => i.yatraId !== yatraId)
+  );
+
+  if (typeof window !== "undefined") {
+    const activeId = localStorage.getItem("yatrasetu_active_id");
+    if (activeId === yatraId) {
+      localStorage.removeItem("yatrasetu_active_id");
+    }
+  }
 }
 
 // ---------------- MEMBER CRUD (Subcollection: yatras/{yatraId}/members) ----------------
@@ -618,7 +693,7 @@ export async function addSahayak(
 ): Promise<YatraStaff> {
   const now = new Date().toISOString();
   const staffUid = staffData.uid.trim();
-  const currentUid = auth?.currentUser?.uid || "org-1";
+  const currentUid = auth?.currentUser?.uid || "organizer";
 
   const newStaff: YatraStaff = {
     id: staffUid,
@@ -683,9 +758,9 @@ export async function removeSahayakFromDb(yatraId: string, sahayakUid: string): 
 }
 
 /**
- * Reset local state
+ * Clear local UI and session cache without affecting Firestore records
  */
-export function resetDemoData(): void {
+export function clearLocalCache(): void {
   if (typeof window !== "undefined") {
     localStorage.removeItem(LS_KEYS.YATRAS);
     localStorage.removeItem(LS_KEYS.MEMBERS);
@@ -693,8 +768,11 @@ export function resetDemoData(): void {
     localStorage.removeItem(LS_KEYS.EXPENSES);
     localStorage.removeItem(LS_KEYS.SAHAYAKS);
     localStorage.removeItem(LS_KEYS.INVITATIONS);
+    localStorage.removeItem("yatrasetu_active_id");
   }
 }
+
+export const resetDemoData = clearLocalCache;
 
 // ---------------- INVITATIONS SERVICE ----------------
 
@@ -775,7 +853,7 @@ export async function createYatraInvitation(
   const inviteId = `inv_${Date.now()}`;
   const now = new Date().toISOString();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  const currentUid = auth?.currentUser?.uid || "org-1";
+  const currentUid = auth?.currentUser?.uid || "organizer";
 
   const newInvitation: YatraInvitation = {
     id: inviteId,
