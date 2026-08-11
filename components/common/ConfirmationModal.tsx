@@ -47,7 +47,7 @@ export function ConfirmationModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+            className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer"
           >
             {cancelLabel}
           </button>
@@ -57,10 +57,10 @@ export function ConfirmationModal({
               onConfirm();
               onClose();
             }}
-            className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold text-white shadow-sm transition ${
+            className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold text-white shadow-sm transition cursor-pointer ${
               isDestructive
-                ? "bg-rose-600 hover:bg-rose-700 active:bg-rose-800"
-                : "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800"
+                ? "bg-rose-600 hover:bg-rose-700 active:bg-rose-800 shadow-rose-600/20"
+                : "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 shadow-emerald-600/20"
             }`}
           >
             {confirmLabel}

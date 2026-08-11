@@ -443,6 +443,14 @@ export async function deleteMemberFromDb(yatraId: string, memberId: string): Pro
   if (isFirebaseConfigured && db && yatraId) {
     try {
       await deleteDoc(doc(db, "yatras", yatraId, "members", memberId));
+      try {
+        const pQuery = query(collection(db, "yatras", yatraId, "payments"), where("memberId", "==", memberId));
+        const pSnap = await getDocs(pQuery);
+        const deletePromises = pSnap.docs.map((docSnap) => deleteDoc(docSnap.ref));
+        await Promise.all(deletePromises);
+      } catch (pErr) {
+        console.warn("Firestore delete associated payments error:", pErr);
+      }
     } catch (e) {
       console.warn("Firestore deleteMember error:", e);
     }
@@ -451,6 +459,11 @@ export async function deleteMemberFromDb(yatraId: string, memberId: string): Pro
   setLocal(
     LS_KEYS.MEMBERS,
     existing.filter((m) => m.id !== memberId)
+  );
+  const existingPayments = getLocal<Payment>(LS_KEYS.PAYMENTS, []);
+  setLocal(
+    LS_KEYS.PAYMENTS,
+    existingPayments.filter((p) => p.memberId !== memberId)
   );
 }
 
