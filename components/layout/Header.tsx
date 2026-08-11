@@ -14,6 +14,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useYatraData } from "@/context/YatraContext";
 import { RoleBadge } from "../common/Badge";
 import { canEditYatra, canAddPayment, canAddExpense, canAddMember } from "@/lib/permissions";
+import { InstallPWAButton } from "@/components/pwa/InstallPWAButton";
+
 
 interface HeaderProps {
   onAddPayment: () => void;
@@ -110,6 +112,9 @@ export function Header({
             )}
           </>
         )}
+
+        {/* Install PWA Button (only visible when installable) */}
+        <InstallPWAButton variant="header" />
 
         {/* User profile dropdown trigger */}
         <div className="relative">

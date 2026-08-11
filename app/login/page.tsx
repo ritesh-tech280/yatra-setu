@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import type { UserRole } from "@/types/yatra";
+import { InstallPWAButton } from "@/components/pwa/InstallPWAButton";
 import {
   Compass,
   Mail,
@@ -86,8 +87,11 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="text-xs text-slate-400 font-medium">
-            Cloud Firebase Edition
+          <div className="flex items-center gap-3">
+            <InstallPWAButton variant="header" />
+            <div className="text-xs text-slate-400 font-medium hidden sm:block">
+              Cloud Firebase Edition
+            </div>
           </div>
         </div>
       </header>

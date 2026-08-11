@@ -19,6 +19,8 @@ import { useYatraData } from "@/context/YatraContext";
 import { RoleBadge } from "../common/Badge";
 import { inr } from "@/lib/calculations";
 import { canManageSahayaks } from "@/lib/permissions";
+import { InstallPWAButton } from "@/components/pwa/InstallPWAButton";
+
 
 export type NavTab = "dashboard" | "members" | "payments" | "expenses" | "sahayaks" | "report";
 
@@ -152,6 +154,9 @@ export function Sidebar({ activeTab, onSelectTab, onCreateYatraClick }: SidebarP
           );
         })}
       </nav>
+
+      {/* Install App CTA if installable */}
+      <InstallPWAButton variant="sidebar" />
 
       {/* User Footer Profile */}
       <div className="p-4 border-t border-slate-800 bg-slate-950/40 flex items-center justify-between">

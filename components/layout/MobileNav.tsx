@@ -15,6 +15,8 @@ import {
 import type { NavTab } from "./Sidebar";
 import { useYatraData } from "@/context/YatraContext";
 import { canManageSahayaks } from "@/lib/permissions";
+import { InstallPWAButton } from "@/components/pwa/InstallPWAButton";
+
 
 interface MobileNavProps {
   activeTab: NavTab;
@@ -100,6 +102,9 @@ export function MobileNav({
                 <span>+ Member</span>
               </button>
             </div>
+
+            {/* Install PWA Banner (Only shown if installable on supported mobile browsers) */}
+            <InstallPWAButton variant="banner" className="mt-2" />
           </div>
         </div>
       )}
