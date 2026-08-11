@@ -83,6 +83,38 @@ export function getWhatsAppReceiptUrl(
 }
 
 /**
+ * Generate a pre-filled WhatsApp share link for an external contributor / donor receipt
+ */
+export function getWhatsAppContributionReceiptUrl(
+  payment: Payment,
+  yatra: Yatra
+): string {
+  const phone = payment.contributorPhone || "";
+  const cleanPhone = phone.replace(/[^0-9]/g, "");
+  const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+
+  let message = `*${yatra.name} - Contribution / Donation Receipt (सहयोग रसीद)*\n`;
+  message += `━━━━━━━━━━━━━━━━━━━━\n`;
+  message += `Respected *${payment.contributorName || "Donor"}*,\n\n`;
+  message += `We gratefully acknowledge your financial contribution towards *${yatra.name}*!\n\n`;
+  message += `*Contribution Details:*\n`;
+  message += `- *Amount Received:* ${inr(payment.amount)}\n`;
+  message += `- *Payment Mode:* ${payment.paymentMethod}\n`;
+  message += `- *Date:* ${formatDate(payment.paymentDate)}\n`;
+  if (payment.note) {
+    message += `- *Purpose / Remark:* ${payment.note}\n`;
+  }
+  message += `\n━━━━━━━━━━━━━━━━━━━━\n`;
+  message += `*Organizer:* ${yatra.organizerName}\n`;
+  message += `Digitally acknowledged via YatraSetu\n`;
+
+  if (!formattedPhone) {
+    return `https://wa.me/?text=${encodeURIComponent(message)}`;
+  }
+  return `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+}
+
+/**
  * Get initials from a person's name (e.g. "Ritesh Kumar" -> "RK")
  */
 export function getInitials(name: string): string {

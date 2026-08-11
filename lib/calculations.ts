@@ -103,34 +103,55 @@ export function calculateSummary(
   const totalMembers = members.length;
   const expected = totalMembers * (Number(fare) || 0);
 
-  const collected = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  let memberCollected = 0;
+  let contributions = 0;
+  let collected = 0;
+
+  for (const p of payments) {
+    const amt = Number(p.amount) || 0;
+    collected += amt;
+    if (p.isContribution || !p.memberId) {
+      contributions += amt;
+    } else {
+      memberCollected += amt;
+    }
+  }
+
   const totalExpenses = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
-  // Outstanding is Expected - Total Collected (or sum of member remaining amounts)
-  const outstanding = Math.max(expected - collected, 0);
-
-  // Current balance is Total Collected - Total Expenses
-  const balance = collected - totalExpenses;
-
-  // Compute status breakdown
+  // Outstanding is the sum of remaining dues across all registered members
+  let outstanding = 0;
   let full = 0;
   let partial = 0;
   let pending = 0;
 
   for (const member of members) {
-    const { status } = getMemberBalance(member.id, payments, fare);
+    const { status, remaining } = getMemberBalance(member.id, payments, fare);
+    outstanding += remaining;
     if (status === "Fully Paid") full++;
     else if (status === "Partial") partial++;
     else pending++;
   }
 
-  const collectionPercentage = expected > 0 ? Math.min(Math.round((collected / expected) * 100), 100) : 0;
-  const expensePercentage = collected > 0 ? Math.round((totalExpenses / collected) * 100) : 0;
+  // Current treasury balance is Total Collected - Total Expenses
+  const balance = collected - totalExpenses;
+
+  const collectionPercentage =
+    expected > 0
+      ? Math.min(Math.round((memberCollected / expected) * 100), 100)
+      : collected > 0
+      ? 100
+      : 0;
+
+  const expensePercentage =
+    collected > 0 ? Math.round((totalExpenses / collected) * 100) : 0;
 
   return {
     totalMembers,
     expected,
     collected,
+    memberCollected,
+    contributions,
     outstanding,
     expenses: totalExpenses,
     balance,

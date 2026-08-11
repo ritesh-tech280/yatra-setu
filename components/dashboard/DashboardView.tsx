@@ -110,7 +110,11 @@ export function DashboardView({
         <StatCard
           label="Total Collected"
           value={inr(summary.collected)}
-          hint={`${summary.collectionPercentage}% of target`}
+          hint={
+            summary.contributions > 0
+              ? `${inr(summary.memberCollected)} fares + ${inr(summary.contributions)} donations`
+              : `${summary.collectionPercentage}% of target`
+          }
           tone="emerald"
           icon={<IndianRupee className="w-5 h-5" />}
           onClick={() => onNavigate("payments")}
@@ -160,145 +164,137 @@ export function DashboardView({
                 Fare Collection Breakdown
               </h2>
             </div>
-            <button
-              onClick={() => onNavigate("payments")}
-              className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 cursor-pointer"
-            >
-              View Payments <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+            <span className="text-xs font-bold text-slate-500">
+              {summary.full} of {summary.totalMembers} Fully Paid
+            </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center">
-            {/* Donut Chart */}
-            <div className="sm:col-span-5 flex justify-center py-2">
+          <div className="flex flex-col sm:flex-row items-center justify-around gap-6 py-2">
+            <div className="flex flex-col items-center">
               <ProgressDonut percentage={summary.collectionPercentage} label="Collected" size={150} />
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-2">
+                Member Target: {summary.collectionPercentage}%
+              </p>
             </div>
 
-            {/* Status Breakdown Legend */}
-            <div className="sm:col-span-7 space-y-3">
-              {/* Fully Paid */}
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/50">
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <div>
-                    <p className="text-xs font-bold text-emerald-950 dark:text-emerald-200">
-                      Fully Paid
-                    </p>
-                    <p className="text-[10px] text-emerald-700/80 dark:text-emerald-400">
-                      Zero balance remaining
-                    </p>
-                  </div>
+            {/* Member status counts */}
+            <div className="space-y-3 w-full sm:w-60">
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300">
+                    Fully Paid
+                  </span>
                 </div>
-                <span className="text-sm font-black text-emerald-700 dark:text-emerald-300">
+                <span className="text-sm font-black text-emerald-800 dark:text-emerald-200">
                   {summary.full} <span className="text-xs font-medium text-slate-500">/ {summary.totalMembers}</span>
                 </span>
               </div>
 
-              {/* Partial */}
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-900/50">
-                <div className="flex items-center gap-2.5">
-                  <Clock className="w-4 h-4 text-amber-600 shrink-0" />
-                  <div>
-                    <p className="text-xs font-bold text-amber-950 dark:text-amber-200">
-                      Partially Paid
-                    </p>
-                    <p className="text-[10px] text-amber-700/80 dark:text-amber-400">
-                      Partially paid advance
-                    </p>
-                  </div>
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-600" />
+                  <span className="text-xs font-bold text-amber-900 dark:text-amber-300">
+                    Partial Paid
+                  </span>
                 </div>
-                <span className="text-sm font-black text-amber-700 dark:text-amber-300">
+                <span className="text-sm font-black text-amber-800 dark:text-amber-200">
                   {summary.partial} <span className="text-xs font-medium text-slate-500">/ {summary.totalMembers}</span>
                 </span>
               </div>
 
-              {/* Pending */}
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-rose-50/80 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/50">
-                <div className="flex items-center gap-2.5">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <div>
-                    <p className="text-xs font-bold text-rose-950 dark:text-rose-200">
-                      Pending
-                    </p>
-                    <p className="text-[10px] text-rose-700/80 dark:text-rose-400">
-                      Full fare amount due
-                    </p>
-                  </div>
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600" />
+                  <span className="text-xs font-bold text-rose-900 dark:text-rose-300">
+                    Payment Pending
+                  </span>
                 </div>
-                <span className="text-sm font-black text-rose-700 dark:text-rose-300">
+                <span className="text-sm font-black text-rose-800 dark:text-rose-200">
                   {summary.pending} <span className="text-xs font-medium text-slate-500">/ {summary.totalMembers}</span>
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
-            <span>
+          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl flex items-center justify-between text-xs">
+            <span className="text-slate-600 dark:text-slate-400">
               <strong>{summary.full}</strong> of <strong>{summary.totalMembers}</strong> members have paid in full.
             </span>
             <button
               onClick={() => onNavigate("members")}
-              className="text-amber-600 dark:text-amber-400 font-bold hover:underline cursor-pointer"
+              className="font-bold text-amber-600 hover:text-amber-700 cursor-pointer"
             >
-              View Member List →
+              Manage Members →
             </button>
           </div>
         </div>
 
-        {/* Right Col: Current Treasury & Expenses Ratio */}
+        {/* Right Col: Expense vs Income Progress */}
         <div className="lg:col-span-5 bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-6">
           <div>
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
                 <p className="text-[11px] font-extrabold uppercase tracking-wider text-purple-600 dark:text-purple-400">
-                  Treasury Balance
+                  Treasury Health
                 </p>
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
-                  Net Balance
+                  Budget Utilization
                 </h2>
               </div>
-              <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300">
-                Income − Expenses
+              <span className="text-xs font-bold text-slate-500">
+                {expenses.length} Records
               </span>
             </div>
 
-            {/* Big Balance Display */}
-            <div className="my-6">
-              <span className="text-xs text-slate-500 uppercase font-semibold">Available Funds</span>
-              <h3 className={`text-4xl font-black tracking-tight mt-1 ${
-                summary.balance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600"
-              }`}>
-                {inr(summary.balance)}
-              </h3>
-            </div>
-
-            {/* Income vs Expenses breakdown bars */}
-            <div className="space-y-3.5">
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" /> Total Collected
-                </span>
-                <span className="text-slate-900 dark:text-white font-bold">{inr(summary.collected)}</span>
+            <div className="mt-6 space-y-4">
+              <div className="p-4 rounded-2xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/60 flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300">
+                    Net Available in Treasury
+                  </span>
+                  <p
+                    className={`text-2xl font-black mt-0.5 ${
+                      summary.balance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600"
+                    }`}
+                  >
+                    {inr(summary.balance)}
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-2xl bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 flex items-center justify-center font-bold">
+                  💼
+                </div>
               </div>
 
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-orange-500" /> Total Expenses
-                </span>
-                <span className="text-slate-900 dark:text-white font-bold">{inr(summary.expenses)}</span>
-              </div>
+              {/* Progress Bar for Expense vs Collected */}
+              <div className="space-y-1.5 pt-2">
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="text-slate-500">Total Inflow</span>
+                  <span className="text-slate-900 dark:text-white font-bold">{inr(summary.collected)}</span>
+                </div>
+                {summary.contributions > 0 && (
+                  <div className="flex items-center justify-between text-[11px] text-slate-400">
+                    <span>Includes external donations</span>
+                    <span className="font-semibold text-amber-600 dark:text-amber-400">+{inr(summary.contributions)}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="text-slate-500">Total Spent</span>
+                  <span className="text-slate-900 dark:text-white font-bold">{inr(summary.expenses)}</span>
+                </div>
 
-              {/* Progress Bar */}
-              <div className="w-full bg-slate-100 dark:bg-slate-800 h-3 rounded-full overflow-hidden p-0.5">
-                <div
-                  className="bg-gradient-to-r from-amber-500 to-orange-600 h-full rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(summary.expensePercentage, 100)}%` }}
-                />
+                <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-1">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      summary.expensePercentage > 90 ? "bg-rose-500" : "bg-purple-500"
+                    }`}
+                    style={{ width: `${Math.min(summary.expensePercentage, 100)}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Expenses are <strong>{summary.expensePercentage}%</strong> of collected funds
+                </p>
               </div>
-
-              <p className="text-[11px] text-slate-500 text-right">
-                Expenses are <strong>{summary.expensePercentage}%</strong> of collected funds
-              </p>
             </div>
           </div>
 
@@ -318,7 +314,7 @@ export function DashboardView({
         <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
             <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-              <span>🧾 Latest Payments</span>
+              <span>🧾 Latest Payments & Contributions</span>
             </h3>
             <button
               onClick={() => onNavigate("payments")}
@@ -335,17 +331,33 @@ export function DashboardView({
           ) : (
             <div className="divide-y divide-slate-100 dark:divide-slate-800">
               {recentPayments.map((p) => {
-                const member = members.find((m) => m.id === p.memberId);
+                const isContrib = Boolean(p.isContribution || !p.memberId);
+                const member = !isContrib ? members.find((m) => m.id === p.memberId) : null;
+                const displayName = isContrib ? (p.contributorName || "Donor") : (member?.name || "Member");
+
                 return (
                   <div key={p.id} className="py-3 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-black text-sm flex items-center justify-center">
-                        ₹
+                      <div
+                        className={`w-9 h-9 rounded-xl font-black text-sm flex items-center justify-center ${
+                          isContrib
+                            ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300"
+                            : "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300"
+                        }`}
+                      >
+                        {isContrib ? "🎁" : "₹"}
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-slate-900 dark:text-white">
-                          {member?.name || "Member"}
-                        </p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs font-bold text-slate-900 dark:text-white">
+                            {displayName}
+                          </p>
+                          {isContrib && (
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">
+                              Donation
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[11px] text-slate-400">
                           {formatDate(p.paymentDate)} • <span className="font-medium text-slate-500">{p.paymentMethod}</span>
                           {p.note && ` • "${p.note}"`}
