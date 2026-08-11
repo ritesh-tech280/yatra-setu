@@ -15,6 +15,8 @@ import {
   Receipt,
   Scale,
   Building,
+  Gift,
+  Users,
 } from "lucide-react";
 import { useYatraData } from "@/context/YatraContext";
 import { inr, getMemberBalance, getCategoryTotals, getPaymentMethodTotals } from "@/lib/calculations";
@@ -31,6 +33,10 @@ export function ReportView() {
   const fare = activeYatra?.fare || 0;
   const categoryTotals = useMemo(() => getCategoryTotals(expenses), [expenses]);
   const methodTotals = useMemo(() => getPaymentMethodTotals(payments), [payments]);
+  const contributionPayments = useMemo(
+    () => payments.filter((p) => p.isContribution || !p.memberId),
+    [payments]
+  );
 
   const handleDownloadPdf = async () => {
     setDownloading(true);
@@ -62,11 +68,11 @@ export function ReportView() {
               Final Financial Audit Report
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">
-              Summary
+              Official Audit
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Complete member-wise collection ledger, category expenses, and transparent final treasury balance.
+            Complete member-wise collection ledger, external donations, category expenses, and transparent final treasury balance.
           </p>
         </div>
 
@@ -100,7 +106,7 @@ export function ReportView() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-black uppercase tracking-wider mb-2">
-                <span>Official Financial Report</span>
+                <span>Official Financial Audit Ledger</span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-black text-slate-950 uppercase tracking-tight">
                 {activeYatra?.name || "Yatra Group"}
@@ -116,7 +122,7 @@ export function ReportView() {
                   <span>Dates: {activeYatra?.startDate} to {activeYatra?.endDate}</span>
                 </span>
                 <span>•</span>
-                <span>Admin: <strong>{activeYatra?.organizerName}</strong></span>
+                <span>Organizer: <strong>{activeYatra?.organizerName}</strong></span>
               </div>
             </div>
 
@@ -158,7 +164,9 @@ export function ReportView() {
                 {inr(summary.collected)}
               </p>
               <p className="text-[10px] text-emerald-700 mt-1">
-                {summary.collectionPercentage}% of total target
+                {summary.contributions > 0
+                  ? `${inr(summary.memberCollected)} + ${inr(summary.contributions)} donations`
+                  : `${summary.collectionPercentage}% of target`}
               </p>
             </div>
 
@@ -182,7 +190,7 @@ export function ReportView() {
               <span className={`text-[11px] font-bold uppercase tracking-wider ${
                 summary.balance >= 0 ? "text-purple-800" : "text-rose-800"
               }`}>
-                Current Balance
+                Final Treasury Balance
               </span>
               <p className={`text-xl font-black mt-1 ${
                 summary.balance >= 0 ? "text-purple-900" : "text-rose-900"
@@ -200,10 +208,10 @@ export function ReportView() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
-              2. Member Payment Report
+              2. Payment Ledger ({summary.totalMembers})
             </h3>
             <span className="text-xs font-bold text-slate-600">
-              {summary.totalMembers} Members • Fully Paid: {summary.full} • Partial: {summary.partial} • Pending: {summary.pending}
+              Fully Paid: {summary.full} • Partial: {summary.partial} • Pending: {summary.pending}
             </span>
           </div>
 
@@ -264,10 +272,10 @@ export function ReportView() {
               <tfoot>
                 <tr className="bg-slate-100 text-slate-900 font-black border-t-2 border-slate-300">
                   <td colSpan={3} className="py-3 px-4 text-right uppercase tracking-wider">
-                    Total:
+                    Members Subtotal:
                   </td>
                   <td className="py-3 px-4 text-right">{inr(summary.expected)}</td>
-                  <td className="py-3 px-4 text-right text-emerald-700">{inr(summary.collected)}</td>
+                  <td className="py-3 px-4 text-right text-emerald-700">{inr(summary.memberCollected)}</td>
                   <td className="py-3 px-4 text-right text-rose-700">{inr(summary.outstanding)}</td>
                   <td className="py-3 px-4 text-center text-slate-600">
                     {summary.full}/{summary.totalMembers} Paid
@@ -278,13 +286,80 @@ export function ReportView() {
           </div>
         </div>
 
-        {/* Section 3: Expense Report by Category */}
+        {/* Section 3: External Contributions & Donations */}
+        {contributionPayments.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                <span>3. External Contributions</span>
+              </h3>
+              <span className="text-xs font-bold text-emerald-700">
+                Total Donated: {inr(summary.contributions)}
+              </span>
+            </div>
+
+            <div className="border w-full overflow-x-auto border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+              <table className="w-full min-w-180 text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-amber-50/70 text-amber-950 font-extrabold border-b border-amber-200">
+                    <th className="py-3 px-4 w-12 text-center">#</th>
+                    <th className="py-3 px-4">Contributor Name</th>
+                    <th className="py-3 px-4">Contact Phone</th>
+                    <th className="py-3 px-4">Mode</th>
+                    <th className="py-3 px-4">Date</th>
+                    <th className="py-3 px-4">Remark</th>
+                    <th className="py-3 px-4 text-right">Contribution Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {contributionPayments.map((p, idx) => (
+                    <tr key={p.id} className="hover:bg-amber-50/30 transition">
+                      <td className="py-2.5 px-4 text-center text-slate-400 font-medium">
+                        {idx + 1}
+                      </td>
+                      <td className="py-2.5 px-4 font-bold text-slate-900">
+                        {p.contributorName || "Well-wisher"}
+                      </td>
+                      <td className="py-2.5 px-4 text-slate-600 font-mono text-[11px]">
+                        {p.contributorPhone || "—"}
+                      </td>
+                      <td className="py-2.5 px-4 text-slate-700 font-medium">
+                        {p.paymentMethod}
+                      </td>
+                      <td className="py-2.5 px-4 text-slate-600">
+                        {formatDate(p.paymentDate)}
+                      </td>
+                      <td className="py-2.5 px-4 text-slate-600 italic">
+                        {p.note || "General Contribution"}
+                      </td>
+                      <td className="py-2.5 px-4 text-right font-black text-emerald-700">
+                        +{inr(p.amount)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-amber-100/70 text-slate-900 font-black border-t-2 border-amber-300">
+                    <td colSpan={6} className="py-3 px-4 text-right uppercase tracking-wider">
+                      Total External Contributions:
+                    </td>
+                    <td className="py-3 px-4 text-right text-emerald-800 text-sm">
+                      {inr(summary.contributions)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Section 4 & 5: Expense Report by Category & Final Summary */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Category Expense Breakdown */}
           <div className="border border-slate-200 rounded-2xl p-5 space-y-4">
             <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5 border-b border-slate-100 pb-2">
               <Receipt className="w-4 h-4 text-orange-600" />
-              <span>3. Expense Report by Category</span>
+              <span>4. Expense Breakdown by Category</span>
             </h3>
 
             <div className="space-y-2.5 text-xs">
@@ -298,7 +373,7 @@ export function ReportView() {
                 </div>
               ))}
               <div className="flex items-center justify-between pt-2 border-t-2 border-slate-900 font-black text-sm text-orange-800">
-                <span>Total Expenses:</span>
+                <span>Total Group Expenses:</span>
                 <span>{inr(summary.expenses)}</span>
               </div>
             </div>
@@ -308,18 +383,30 @@ export function ReportView() {
           <div className="border border-slate-200 rounded-2xl p-5 space-y-4">
             <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5 border-b border-slate-100 pb-2">
               <IndianRupee className="w-4 h-4 text-emerald-600" />
-              <span>4. Final Summary & Treasury Balance</span>
+              <span>5. Final Financial Settlement & Net Treasury</span>
             </h3>
 
             <div className="space-y-2.5 text-xs">
               <div className="flex items-center justify-between py-1 border-b border-slate-50">
-                <span className="text-slate-600">Total Expected Collection</span>
+                <span className="text-slate-600">Expected Member Fare Collection</span>
                 <span className="font-bold text-slate-900">{inr(summary.expected)}</span>
               </div>
 
               <div className="flex items-center justify-between py-1 border-b border-slate-50">
-                <span className="text-slate-600">Total Collected Amount</span>
-                <span className="font-bold text-emerald-700">{inr(summary.collected)}</span>
+                <span className="text-slate-600">Collected from Members</span>
+                <span className="font-bold text-emerald-700">{inr(summary.memberCollected)}</span>
+              </div>
+
+              {summary.contributions > 0 && (
+                <div className="flex items-center justify-between py-1 border-b border-slate-50">
+                  <span className="text-slate-600">External Contributions</span>
+                  <span className="font-bold text-amber-700">+{inr(summary.contributions)}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between py-1 border-b border-slate-50 bg-emerald-50/50 px-0.5 rounded-lg font-bold">
+                <span className="text-emerald-950">Grand Total Collected</span>
+                <span className="text-emerald-800 font-black text-sm">{inr(summary.collected)}</span>
               </div>
 
               <div className="flex items-center justify-between py-1 border-b border-slate-50">
@@ -327,15 +414,18 @@ export function ReportView() {
                 <span className="font-bold text-rose-600">{inr(summary.outstanding)}</span>
               </div>
 
-              <div className="flex items-center justify-between py-1 border-b border-slate-50">
-                <span className="text-slate-600">Total Expenses</span>
-                <span className="font-bold text-orange-700">{inr(summary.expenses)}</span>
+              <div className="flex items-center justify-between py-1 border-b border-slate-50 bg-orange-50/50 px-0.5 rounded-lg font-bold">
+                <span className="text-orange-950">Total Expenses</span>
+                <span className="text-orange-800 font-black text-sm">{inr(summary.expenses)}</span>
               </div>
 
-              <div className="flex items-center justify-between pt-2 border-t-2 border-slate-900 font-black text-sm text-purple-900">
-                <span>Final Balance:</span>
-                <span className="text-base">{inr(summary.balance)}</span>
+              <div className={`flex items-center justify-between pt-2 border-t-2 border-slate-900 font-black text-sm ${
+                summary.balance >= 0 ? "text-purple-900" : "text-rose-900"
+              }`}>
+                <span>Final Net Treasury Balance:</span>
+                <span className="text-base font-black">{inr(summary.balance)}</span>
               </div>
+              
             </div>
           </div>
         </div>
@@ -345,13 +435,13 @@ export function ReportView() {
           <div>
             <div className="h-12 border-b border-slate-400 border-dashed" />
             <p className="font-bold text-slate-800 mt-2">{activeYatra?.organizerName || "Admin"}</p>
-            <p className="text-[10px] text-slate-500 uppercase">Admin</p>
+            <p className="text-[10px] text-slate-500 uppercase">Admin Signature</p>
           </div>
 
           <div>
             <div className="h-12 border-b border-slate-400 border-dashed" />
             <p className="font-bold text-slate-800 mt-2">Manager</p>
-            <p className="text-[10px] text-slate-500 uppercase">Verification</p>
+            <p className="text-[10px] text-slate-500 uppercase">Signature</p>
           </div>
 
           <div className="col-span-2 sm:col-span-1">

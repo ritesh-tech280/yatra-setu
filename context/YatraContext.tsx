@@ -89,9 +89,11 @@ interface YatraContextType {
   addNewMember: (data: { name: string; phone: string; address?: string; notes?: string }) => Promise<Member | null>;
   editMember: (memberId: string, data: Partial<Member>) => Promise<void>;
   removeMember: (memberId: string) => Promise<void>;
-  // Payment CRUD
   recordPayment: (data: {
-    memberId: string;
+    memberId?: string;
+    isContribution?: boolean;
+    contributorName?: string;
+    contributorPhone?: string;
     amount: number;
     paymentMethod: Payment["paymentMethod"];
     paymentDate?: string;
@@ -462,7 +464,10 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
 
   // ---------------- PAYMENT ACTIONS ----------------
   const recordPayment = async (data: {
-    memberId: string;
+    memberId?: string;
+    isContribution?: boolean;
+    contributorName?: string;
+    contributorPhone?: string;
     amount: number;
     paymentMethod: Payment["paymentMethod"];
     paymentDate?: string;
@@ -477,33 +482,58 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
 
-    const validation = validatePaymentAmount(
-      data.memberId,
-      data.amount,
-      payments,
-      activeYatra.fare
-    );
-    if (!validation.valid) {
-      error(validation.error || "Invalid payment amount");
+    const numAmount = Number(data.amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      error("Please enter a valid amount greater than 0.");
       return null;
+    }
+
+    if (data.isContribution) {
+      if (!data.contributorName?.trim()) {
+        error("Contributor / Donor name is required.");
+        return null;
+      }
+    } else {
+      if (!data.memberId) {
+        error("Please select a member.");
+        return null;
+      }
+      const validation = validatePaymentAmount(
+        data.memberId,
+        numAmount,
+        payments,
+        activeYatra.fare
+      );
+      if (!validation.valid) {
+        error(validation.error || "Invalid payment amount");
+        return null;
+      }
     }
 
     try {
       const currentUid = user?.uid || user?.id || "organizer";
       const newPayment = await savePayment({
         yatraId: activeYatra.id,
-        memberId: data.memberId,
-        amount: Number(data.amount),
+        memberId: data.isContribution ? "" : (data.memberId || ""),
+        isContribution: Boolean(data.isContribution),
+        contributorName: data.contributorName?.trim() || "",
+        contributorPhone: data.contributorPhone?.trim() || "",
+        amount: numAmount,
         paymentMethod: data.paymentMethod,
         paymentDate: data.paymentDate || new Date().toISOString().split("T")[0],
-        note: data.note || "",
+        note: data.note?.trim() || "",
         createdBy: currentUid,
         createdByName: user?.name || "Organizer",
       });
 
       setPayments((prev) => [newPayment, ...prev.filter((p) => p.id !== newPayment.id)]);
-      const member = members.find((m) => m.id === data.memberId);
-      success(`₹${data.amount.toLocaleString("en-IN")} payment recorded for ${member?.name || "member"}!`);
+
+      if (data.isContribution) {
+        success(`₹${numAmount.toLocaleString("en-IN")} contribution recorded from ${data.contributorName}!`);
+      } else {
+        const member = members.find((m) => m.id === data.memberId);
+        success(`₹${numAmount.toLocaleString("en-IN")} payment recorded for ${member?.name || "member"}!`);
+      }
       return newPayment;
     } catch (e: any) {
       error(e?.message || "Failed to record payment.");

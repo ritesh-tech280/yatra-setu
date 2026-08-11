@@ -66,7 +66,10 @@ export interface Member {
 export interface Payment {
   id: string;
   yatraId: string;
-  memberId: string;
+  memberId: string; // empty string "" or "external" if external contribution
+  isContribution?: boolean;
+  contributorName?: string;
+  contributorPhone?: string;
   amount: number;
   paymentMethod: PaymentMethod;
   paymentDate: string;
@@ -137,11 +140,13 @@ export interface MemberBalance {
 
 export interface FinancialSummary {
   totalMembers: number;
-  expected: number;
-  collected: number;
-  outstanding: number;
-  expenses: number;
-  balance: number;
+  expected: number; // members.length * fare
+  collected: number; // total collected = memberCollected + contributions
+  memberCollected: number; // fare payments collected from registered members
+  contributions: number; // donations/contributions from external well-wishers
+  outstanding: number; // total remaining dues from registered members
+  expenses: number; // total expenses
+  balance: number; // final net treasury balance = collected - expenses
   full: number;
   partial: number;
   pending: number;
