@@ -244,6 +244,13 @@ export async function deleteDbMember(id: string, yatraId?: string): Promise<bool
   if (serverDb && actualYatraId) {
     try {
       await deleteDoc(doc(serverDb, "yatras", actualYatraId, "members", id));
+      try {
+        const pQuery = query(collection(serverDb, "yatras", actualYatraId, "payments"), where("memberId", "==", id));
+        const pSnap = await getDocs(pQuery);
+        for (const d of pSnap.docs) {
+          await deleteDoc(d.ref);
+        }
+      } catch {}
     } catch (e) {
       console.warn("Firestore deleteDbMember fallback:", e);
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import  { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   Search,
   UserPlus,
@@ -11,9 +11,11 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
+  Trash2,
 } from "lucide-react";
 import { useYatraData } from "@/context/YatraContext";
 import { StatusBadge } from "../common/Badge";
+import { ConfirmationModal } from "../common/ConfirmationModal";
 import { MemberDetailModal } from "./MemberDetailModal";
 import { AddMemberModal } from "./AddMemberModal";
 import { inr, getMemberBalance } from "@/lib/calculations";
@@ -29,6 +31,7 @@ export function MembersView({ onAddPaymentForMember }: MembersViewProps) {
     activeYatra,
     members,
     payments,
+    isOrganizer,
     addNewMember,
     editMember,
     removeMember,
@@ -39,6 +42,7 @@ export function MembersView({ onAddPaymentForMember }: MembersViewProps) {
   const [statusFilter, setStatusFilter] = useState<"All" | PaymentStatus>("All");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [memberToEdit, setMemberToEdit] = useState<Member | null>(null);
+  const [memberToDelete, setMemberToDelete] = useState<Member | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
   const fare = activeYatra?.fare || 0;
@@ -252,7 +256,22 @@ export function MembersView({ onAddPaymentForMember }: MembersViewProps) {
                       </div>
                     </div>
 
-                    <StatusBadge status={balance.status} />
+                    <div className="flex items-center gap-1.5">
+                      <StatusBadge status={balance.status} />
+                      {isOrganizer && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMemberToDelete(m);
+                          }}
+                          title={`Delete ${m.name}`}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Financial Bar */}
@@ -358,6 +377,11 @@ export function MembersView({ onAddPaymentForMember }: MembersViewProps) {
             setShowAddModal(false);
             setMemberToEdit(null);
           }}
+          onDelete={async (id) => {
+            await removeMember(id);
+            setMemberToEdit(null);
+            setShowAddModal(false);
+          }}
           onSubmit={async (data) => {
             if (memberToEdit) {
               await editMember(memberToEdit.id, data);
@@ -367,6 +391,23 @@ export function MembersView({ onAddPaymentForMember }: MembersViewProps) {
           }}
         />
       )}
+
+      {/* Delete Member Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={Boolean(memberToDelete)}
+        title="Confirm Delete Member"
+        message={`Are you sure you want to permanently delete "${memberToDelete?.name}"? All associated payment records and ledger history for this member will also be removed. This action cannot be undone.`}
+        confirmLabel="Yes, Delete Member"
+        cancelLabel="Cancel"
+        isDestructive={true}
+        onConfirm={async () => {
+          if (memberToDelete) {
+            await removeMember(memberToDelete.id);
+            setMemberToDelete(null);
+          }
+        }}
+        onClose={() => setMemberToDelete(null)}
+      />
     </div>
   );
 }

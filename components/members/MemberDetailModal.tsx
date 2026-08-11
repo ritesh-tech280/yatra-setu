@@ -21,7 +21,7 @@ import {
 import type { Member, Payment, Yatra } from "@/types/yatra";
 import { getMemberBalance, inr } from "@/lib/calculations";
 import { formatDate, getWhatsAppReceiptUrl } from "@/lib/utils";
-import { useAuth } from "@/context/AuthContext";
+import { useYatraData } from "@/context/YatraContext";
 
 interface MemberDetailModalProps {
   member: Member;
@@ -44,7 +44,7 @@ export function MemberDetailModal({
   onDeleteMember,
   onDeletePayment,
 }: MemberDetailModalProps) {
-  const { isOrganizer } = useAuth();
+  const { isOrganizer } = useYatraData();
   const balance = getMemberBalance(member.id, payments, yatra.fare);
   const memberPayments = payments
     .filter((p) => p.memberId === member.id)
@@ -290,9 +290,11 @@ export function MemberDetailModal({
       {/* Delete Member Confirmation */}
       <ConfirmationModal
         isOpen={showDeleteMemberConfirm}
-        title="Remove Member from Group"
-        message={`Are you sure you want to remove ${member.name}? Their payment records will also be unlinked.`}
-        confirmLabel="Yes, Delete"
+        title="Confirm Delete Member"
+        message={`Are you sure you want to permanently delete "${member.name}"? All associated payment records and ledger history for this member will also be removed. This action cannot be undone.`}
+        confirmLabel="Yes, Delete Member"
+        cancelLabel="Cancel"
+        isDestructive={true}
         onConfirm={() => {
           onDeleteMember(member.id);
           onClose();

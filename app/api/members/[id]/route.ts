@@ -18,7 +18,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    await deleteDbMember(id);
+    const { searchParams } = new URL(req.url);
+    const yatraId = searchParams.get("yatraId") || undefined;
+    await deleteDbMember(id, yatraId);
     return NextResponse.json({ success: true, message: "Member deleted successfully" });
   } catch (error: any) {
     return NextResponse.json({ error: error?.message || "Failed to delete member" }, { status: 500 });
