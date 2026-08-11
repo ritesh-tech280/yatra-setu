@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Trip Management",
-    short_name: "Trip Manager",
+    name: "Yatra Setu",
+    short_name: "Event Manager",
     description:
       "Production-grade mobile-first web app for Kanwar & Pilgrimage Yatra groups. Manage members, fare collections, expenses, and audited financial reports.",
     start_url: "/",
