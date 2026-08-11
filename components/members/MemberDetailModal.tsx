@@ -108,7 +108,7 @@ export function MemberDetailModal({
             {/* Standard Fare */}
             <div className="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-center border border-slate-200 dark:border-slate-700">
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                Standard Fare
+                Fare
               </p>
               <p className="text-lg md:text-xl font-black text-slate-800 dark:text-white mt-1">
                 {inr(yatra.fare)}
@@ -134,7 +134,7 @@ export function MemberDetailModal({
               <p className={`text-[10px] font-bold uppercase tracking-wider ${
                 balance.remaining > 0 ? "text-rose-700 dark:text-rose-400" : "text-slate-500"
               }`}>
-                Remaining Due
+                 Due
               </p>
               <p className={`text-lg md:text-xl font-black mt-1 ${
                 balance.remaining > 0 ? "text-rose-700 dark:text-rose-300" : "text-slate-400"
