@@ -13,14 +13,14 @@ import {
   Sparkles,
   MapPin,
   Calendar,
+  ArrowLeftRight,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useYatraData } from "@/context/YatraContext";
 import { RoleBadge } from "../common/Badge";
-import { inr } from "@/lib/calculations";
+import { inr, getYatraStatus, getYatraStatusLabel } from "@/lib/calculations";
 import { canManageSahayaks } from "@/lib/permissions";
 import { InstallPWAButton } from "@/components/pwa/InstallPWAButton";
-
 
 export type NavTab = "dashboard" | "members" | "payments" | "expenses" | "sahayaks" | "report";
 
@@ -28,11 +28,19 @@ interface SidebarProps {
   activeTab: NavTab;
   onSelectTab: (tab: NavTab) => void;
   onCreateYatraClick: () => void;
+  onOpenSwitchEvent?: () => void;
 }
 
-export function Sidebar({ activeTab, onSelectTab, onCreateYatraClick }: SidebarProps) {
+export function Sidebar({
+  activeTab,
+  onSelectTab,
+  onCreateYatraClick,
+  onOpenSwitchEvent,
+}: SidebarProps) {
   const { user, logout } = useAuth();
   const { activeYatra, yatras, switchYatra, userRole, isOrganizer } = useYatraData();
+
+  const activeStatus = getYatraStatus(activeYatra);
 
   const allNavItems: { id: NavTab; label: string; icon: React.ReactNode; organizerOnly?: boolean }[] = [
     { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -67,12 +75,17 @@ export function Sidebar({ activeTab, onSelectTab, onCreateYatraClick }: SidebarP
         </div>
       </div>
 
-      {/* Active Yatra Selector / Switcher */}
+      {/* Active Yatra Selector / Switcher Card */}
       <div className="p-4">
         <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3.5 relative group hover:border-amber-500/40 transition-colors">
           <div className="flex items-center justify-between text-[11px] font-bold text-amber-400 uppercase tracking-wider mb-1.5">
             <span className="flex items-center gap-1">
-              <Sparkles className="w-3 h-3" /> Active Trip
+              <Sparkles className="w-3 h-3" />
+              {activeStatus === "ongoing"
+                ? "Active Event"
+                : activeStatus === "completed"
+                ? "Previous Event"
+                : "Upcoming Event"}
             </span>
             <span className="text-slate-400 font-normal">
               Fare: <strong className="text-white">{inr(activeYatra?.fare || 0)}</strong>
@@ -80,17 +93,39 @@ export function Sidebar({ activeTab, onSelectTab, onCreateYatraClick }: SidebarP
           </div>
 
           {yatras.length > 0 ? (
-            <select
-              value={activeYatra?.id || ""}
-              onChange={(e) => switchYatra(e.target.value)}
-              className="w-full bg-slate-900/90 text-white font-bold text-sm rounded-xl py-2 px-3 border border-slate-700 focus:outline-none focus:border-amber-500 cursor-pointer"
-            >
-              {Array.from(new Map(yatras.map((y) => [y.id, y])).values()).map((y) => (
-                <option key={y.id} value={y.id}>
-                  {y.name}
-                </option>
-              ))}
-            </select>
+            <div className="space-y-2">
+              <select
+                value={activeYatra?.id || ""}
+                onChange={(e) => switchYatra(e.target.value)}
+                className="w-full bg-slate-900/90 text-white font-bold text-xs rounded-xl py-2 px-3 border border-slate-700 focus:outline-none focus:border-amber-500 cursor-pointer truncate"
+              >
+                {Array.from(new Map(yatras.map((y) => [y.id, y])).values()).map((y) => {
+                  const status = getYatraStatus(y);
+                  const prefix =
+                    status === "ongoing"
+                      ? "🟢 [Running]"
+                      : status === "completed"
+                      ? "📂 [Previous]"
+                      : "🗓️ [Upcoming]";
+                  return (
+                    <option key={y.id} value={y.id}>
+                      {prefix} {y.name}
+                    </option>
+                  );
+                })}
+              </select>
+
+              {onOpenSwitchEvent && (
+                <button
+                  type="button"
+                  onClick={onOpenSwitchEvent}
+                  className="w-full text-center py-1 text-[11px] font-bold text-amber-400 hover:text-amber-300 transition flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <ArrowLeftRight className="w-3 h-3" />
+                  <span>Browse All Events ({yatras.length})</span>
+                </button>
+              )}
+            </div>
           ) : (
             <div className="text-xs text-slate-400 py-1 font-medium">
               No Yatra Created Yet
@@ -98,7 +133,7 @@ export function Sidebar({ activeTab, onSelectTab, onCreateYatraClick }: SidebarP
           )}
 
           {activeYatra && (
-            <div className="mt-2.5 flex flex-col gap-1 text-xs text-slate-400">
+            <div className="mt-2 flex flex-col gap-1 text-xs text-slate-400 border-t border-slate-700/50 pt-2">
               <div className="flex items-center gap-1.5 text-slate-300">
                 <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 <span className="truncate">
@@ -117,9 +152,10 @@ export function Sidebar({ activeTab, onSelectTab, onCreateYatraClick }: SidebarP
           {isOrganizer && (
             <button
               onClick={onCreateYatraClick}
-              className="mt-3 w-full py-1.5 px-3 rounded-lg bg-slate-700/50 hover:bg-amber-500/20 text-xs font-semibold text-amber-300 hover:text-amber-200 border border-slate-600/50 hover:border-amber-500/40 transition flex items-center justify-center gap-1.5 cursor-pointer"
+              className="mt-3 w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 text-xs font-bold text-amber-300 hover:text-amber-200 border border-amber-500/30 hover:border-amber-500/50 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
             >
-              <PlusCircle className="w-3.5 h-3.5" /> + Create New Trip
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>+ Create New Event</span>
             </button>
           )}
         </div>

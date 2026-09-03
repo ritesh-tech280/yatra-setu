@@ -1,4 +1,4 @@
-import type { Expense, Member, Payment, MemberBalance, FinancialSummary, PaymentStatus, ExpenseCategory, PaymentMethod } from "@/types/yatra";
+import type { Expense, Member, Payment, MemberBalance, FinancialSummary, PaymentStatus, ExpenseCategory, PaymentMethod, Yatra } from "@/types/yatra";
 
 /**
  * Format any number as Indian Rupee (INR) currency string e.g. ₹1,65,000
@@ -237,3 +237,30 @@ export function getPaymentMethodTotals(payments: Payment[]): PaymentMethodTotal[
     percentage: overallTotal > 0 ? Math.round((data.total / overallTotal) * 100) : 0,
   }));
 }
+
+/**
+ * Event / Yatra Status detection: Running (ongoing), Upcoming, or Previous (completed)
+ */
+export type YatraEventStatus = "ongoing" | "upcoming" | "completed";
+
+export function getYatraStatus(yatra?: Yatra | null): YatraEventStatus {
+  if (!yatra) return "ongoing";
+  if (!yatra.startDate || !yatra.endDate) return "ongoing";
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  if (todayStr < yatra.startDate) return "upcoming";
+  if (todayStr > yatra.endDate) return "completed";
+  return "ongoing";
+}
+
+export function getYatraStatusLabel(status: YatraEventStatus): string {
+  switch (status) {
+    case "ongoing":
+      return "Running";
+    case "upcoming":
+      return "Upcoming";
+    case "completed":
+      return "Previous";
+  }
+}
+

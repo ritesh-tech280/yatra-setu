@@ -68,6 +68,7 @@ interface YatraContextType {
   setActiveYatraId: (id: string) => void;
   yatras: Yatra[];
   loading: boolean;
+  isSwitchingEvent: boolean;
   userRole: YatraRole;
   roleLoading: boolean;
   isOrganizer: boolean;
@@ -139,6 +140,7 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
   const [sahayaks, setSahayaks] = useState<YatraStaff[]>([]);
   const [invitations, setInvitations] = useState<YatraInvitation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSwitchingEvent, setIsSwitchingEvent] = useState(false);
 
   // Active Yatra computed
   const activeYatra = useMemo(() => {
@@ -246,7 +248,7 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
     };
   }, [user]);
 
-  // 2. Load nested subcollections whenever activeYatra changes
+  // 2. Load nested subcollections strictly for activeYatra
   useEffect(() => {
     if (!activeYatra) {
       setMembers([]);
@@ -254,13 +256,26 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
       setExpenses([]);
       setSahayaks([]);
       setInvitations([]);
+      setIsSwitchingEvent(false);
       return;
     }
 
     const yatraId = activeYatra.id;
-    localStorage.setItem("yatrasetu_active_id", yatraId);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("yatrasetu_active_id", yatraId);
+    }
 
-    // Initial fetch of subcollections
+    // Immediately sanitize subcollections from any previous event
+    setMembers([]);
+    setPayments([]);
+    setExpenses([]);
+    setSahayaks([]);
+    setInvitations([]);
+    setIsSwitchingEvent(true);
+
+    let isCurrent = true;
+
+    // Initial fetch of subcollections for active event
     Promise.all([
       fetchMembers(yatraId),
       fetchPayments(yatraId),
@@ -269,44 +284,66 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
       fetchInvitations(yatraId),
     ])
       .then(([mList, pList, eList, sList, iList]) => {
-        setMembers(Array.from(new Map(mList.map((m) => [m.id, m])).values()));
-        setPayments(Array.from(new Map(pList.map((p) => [p.id, p])).values()));
-        setExpenses(Array.from(new Map(eList.map((e) => [e.id, e])).values()));
-        setSahayaks(Array.from(new Map(sList.map((s) => [s.id || s.uid, s])).values()));
-        setInvitations(Array.from(new Map(iList.map((i) => [i.id, i])).values()));
-      })
-      .catch((err) => console.error("Error fetching subcollections:", err));
+        // Discard if the user switched to a different event while fetching
+        if (!isCurrent) return;
 
-    // Realtime listeners
+        setMembers(Array.from(new Map(mList.filter((m) => m.yatraId === yatraId).map((m) => [m.id, m])).values()));
+        setPayments(Array.from(new Map(pList.filter((p) => p.yatraId === yatraId).map((p) => [p.id, p])).values()));
+        setExpenses(Array.from(new Map(eList.filter((e) => e.yatraId === yatraId).map((e) => [e.id, e])).values()));
+        setSahayaks(Array.from(new Map(sList.filter((s) => s.yatraId === yatraId).map((s) => [s.id || s.uid, s])).values()));
+        setInvitations(Array.from(new Map(iList.filter((i) => i.yatraId === yatraId).map((i) => [i.id, i])).values()));
+        setIsSwitchingEvent(false);
+      })
+      .catch((err) => {
+        if (!isCurrent) return;
+        console.error("Error fetching subcollections:", err);
+        setIsSwitchingEvent(false);
+      });
+
+    // Realtime listeners strictly scoped to active event
     const unsubMembers = listenToMembers(yatraId, (list) => {
-      setMembers(Array.from(new Map(list.map((m) => [m.id, m])).values()));
+      if (!isCurrent) return;
+      setMembers(Array.from(new Map(list.filter((m) => m.yatraId === yatraId).map((m) => [m.id, m])).values()));
     });
     const unsubPayments = listenToPayments(yatraId, (list) => {
-      setPayments(Array.from(new Map(list.map((p) => [p.id, p])).values()));
+      if (!isCurrent) return;
+      setPayments(Array.from(new Map(list.filter((p) => p.yatraId === yatraId).map((p) => [p.id, p])).values()));
     });
     const unsubExpenses = listenToExpenses(yatraId, (list) => {
-      setExpenses(Array.from(new Map(list.map((e) => [e.id, e])).values()));
+      if (!isCurrent) return;
+      setExpenses(Array.from(new Map(list.filter((e) => e.yatraId === yatraId).map((e) => [e.id, e])).values()));
     });
     const unsubSahayaks = listenToSahayaks(yatraId, (list) => {
-      setSahayaks(Array.from(new Map(list.map((s) => [s.id || s.uid, s])).values()));
+      if (!isCurrent) return;
+      setSahayaks(Array.from(new Map(list.filter((s) => s.yatraId === yatraId).map((s) => [s.id || s.uid, s])).values()));
     });
     const unsubInvitations = listenToInvitations(yatraId, (list) => {
-      setInvitations(Array.from(new Map(list.map((i) => [i.id, i])).values()));
+      if (!isCurrent) return;
+      setInvitations(Array.from(new Map(list.filter((i) => i.yatraId === yatraId).map((i) => [i.id, i])).values()));
     });
 
     return () => {
+      isCurrent = false;
       if (unsubMembers) unsubMembers();
       if (unsubPayments) unsubPayments();
       if (unsubExpenses) unsubExpenses();
       if (unsubSahayaks) unsubSahayaks();
       if (unsubInvitations) unsubInvitations();
     };
-  }, [activeYatra]);
+  }, [activeYatra?.id]);
 
-  // Switch active Yatra
+  // Switch active Yatra with immediate state clearing
   const switchYatra = useCallback((yatraId: string) => {
+    setIsSwitchingEvent(true);
+    setMembers([]);
+    setPayments([]);
+    setExpenses([]);
+    setSahayaks([]);
+    setInvitations([]);
     setActiveYatraId(yatraId);
-    localStorage.setItem("yatrasetu_active_id", yatraId);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("yatrasetu_active_id", yatraId);
+    }
   }, []);
 
   // Compute live financial summary
@@ -329,6 +366,13 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
     const currentUid = user?.uid || user?.id || "organizer";
     const currentName = user?.name || "Organizer";
 
+    // Immediately isolate subcollection state for the new event
+    setMembers([]);
+    setPayments([]);
+    setExpenses([]);
+    setSahayaks([]);
+    setInvitations([]);
+
     const newYatra = await saveYatra({
       ...data,
       organizerId: currentUid,
@@ -337,7 +381,10 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
 
     setYatras((prev) => [newYatra, ...prev.filter((y) => y.id !== newYatra.id)]);
     setActiveYatraId(newYatra.id);
-    success(`Yatra "${newYatra.name}" created successfully!`);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("yatrasetu_active_id", newYatra.id);
+    }
+    success(`Event "${newYatra.name}" created successfully!`);
     return newYatra;
   };
 
@@ -820,6 +867,7 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
         setActiveYatraId,
         yatras,
         loading,
+        isSwitchingEvent,
         userRole,
         roleLoading,
         isOrganizer,
