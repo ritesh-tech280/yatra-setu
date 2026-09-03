@@ -81,8 +81,8 @@ export default function YatraApp() {
   if (authLoading || (user && (dataLoading || roleLoading))) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 text-white gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-2xl shadow-xl shadow-amber-500/20 animate-pulse">
-          🚩
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-xl animate-pulse">
+          <img src="./icons/app.png" alt="Logo" />
         </div>
         <div className="flex items-center gap-2 text-sm font-bold text-amber-400">
           <Loader2 className="w-5 h-5 animate-spin" />

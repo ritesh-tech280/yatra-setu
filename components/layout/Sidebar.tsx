@@ -60,8 +60,8 @@ export function Sidebar({
       {/* Brand Header */}
       <div className="p-5 border-b border-slate-800 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-orange-500/20">
-            🚩
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg">
+            <img src="./icons/app.png" alt="Logo" />
           </div>
           <div>
             <h1 className="font-extrabold text-lg text-white tracking-tight flex items-center gap-1.5">
