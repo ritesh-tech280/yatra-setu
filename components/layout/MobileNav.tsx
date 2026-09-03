@@ -11,12 +11,13 @@ import {
   UserPlus,
   ShieldCheck,
   X,
+  PlusCircle,
+  ArrowLeftRight,
 } from "lucide-react";
 import type { NavTab } from "./Sidebar";
 import { useYatraData } from "@/context/YatraContext";
 import { canManageSahayaks } from "@/lib/permissions";
 import { InstallPWAButton } from "@/components/pwa/InstallPWAButton";
-
 
 interface MobileNavProps {
   activeTab: NavTab;
@@ -24,7 +25,9 @@ interface MobileNavProps {
   onAddPayment: () => void;
   onAddExpense: () => void;
   onAddMember: () => void;
-  onAddSahayak: () => void ;
+  onAddSahayak: () => void;
+  onOpenCreateEvent?: () => void;
+  onOpenSwitchEvent?: () => void;
 }
 
 export function MobileNav({
@@ -34,8 +37,10 @@ export function MobileNav({
   onAddExpense,
   onAddMember,
   onAddSahayak,
+  onOpenCreateEvent,
+  onOpenSwitchEvent,
 }: MobileNavProps) {
-  const { userRole } = useYatraData();
+  const { userRole, isOrganizer } = useYatraData();
   const [showQuickActions, setShowQuickActions] = useState(false);
 
   return (
@@ -47,13 +52,18 @@ export function MobileNav({
           onClick={() => setShowQuickActions(false)}
         >
           <div
-            className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-3 mb-16 animate-in slide-in-from-bottom-5 duration-200"
+            className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 mb-16 animate-in slide-in-from-bottom-5 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                Quick Action
-              </h3>
+              <div>
+                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                  Quick Actions
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Manage events, members, and transactions
+                </p>
+              </div>
               <button
                 onClick={() => setShowQuickActions(false)}
                 className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 cursor-pointer"
@@ -62,16 +72,56 @@ export function MobileNav({
               </button>
             </div>
 
+            {/* Event Management Row */}
+            <div className="grid grid-cols-2 gap-2">
+              {isOrganizer && onOpenCreateEvent && (
+                <button
+                  onClick={() => {
+                    setShowQuickActions(false);
+                    onOpenCreateEvent();
+                  }}
+                  className="flex items-center gap-2.5 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-300 font-bold text-xs active:scale-95 transition cursor-pointer"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shrink-0">
+                    <PlusCircle className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <span className="block leading-tight font-extrabold">+ New Event</span>
+                    <span className="text-[10px] text-slate-500">Run parallel trip</span>
+                  </div>
+                </button>
+              )}
+
+              {onOpenSwitchEvent && (
+                <button
+                  onClick={() => {
+                    setShowQuickActions(false);
+                    onOpenSwitchEvent();
+                  }}
+                  className="flex items-center gap-2.5 p-3 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-200 font-bold text-xs active:scale-95 transition cursor-pointer"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-slate-800 dark:bg-slate-700 text-white flex items-center justify-center shrink-0">
+                    <ArrowLeftRight className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div className="text-left">
+                    <span className="block leading-tight font-extrabold">Switch Event</span>
+                    <span className="text-[10px] text-slate-500">View past / other</span>
+                  </div>
+                </button>
+              )}
+            </div>
+
+            {/* Daily Operational Actions Row */}
             <div className="grid grid-cols-3 gap-2.5 pt-1">
               <button
                 onClick={() => {
                   setShowQuickActions(false);
                   onAddPayment();
                 }}
-                className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold text-xs gap-2 active:scale-95 transition shadow-xs cursor-pointer"
+                className="flex flex-col items-center justify-center p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold text-xs gap-2 active:scale-95 transition shadow-xs cursor-pointer"
               >
-                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
-                  <IndianRupee className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                  <IndianRupee className="w-4 h-4" />
                 </div>
                 <span>+ Payment</span>
               </button>
@@ -81,10 +131,10 @@ export function MobileNav({
                   setShowQuickActions(false);
                   onAddExpense();
                 }}
-                className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-orange-50 dark:bg-orange-950/50 border border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-300 font-bold text-xs gap-2 active:scale-95 transition shadow-xs cursor-pointer"
+                className="flex flex-col items-center justify-center p-3 rounded-2xl bg-orange-50 dark:bg-orange-950/50 border border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-300 font-bold text-xs gap-2 active:scale-95 transition shadow-xs cursor-pointer"
               >
-                <div className="w-10 h-10 rounded-xl bg-orange-600 text-white flex items-center justify-center shadow-xs">
-                  <Receipt className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-xl bg-orange-600 text-white flex items-center justify-center shadow-xs">
+                  <Receipt className="w-4 h-4" />
                 </div>
                 <span>+ Expense</span>
               </button>
@@ -94,10 +144,10 @@ export function MobileNav({
                   setShowQuickActions(false);
                   onAddMember();
                 }}
-                className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 font-bold text-xs gap-2 active:scale-95 transition shadow-xs cursor-pointer"
+                className="flex flex-col items-center justify-center p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 font-bold text-xs gap-2 active:scale-95 transition shadow-xs cursor-pointer"
               >
-                <div className="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shadow-xs">
-                  <UserPlus className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shadow-xs">
+                  <UserPlus className="w-4 h-4" />
                 </div>
                 <span>+ Member</span>
               </button>

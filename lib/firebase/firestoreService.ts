@@ -226,7 +226,7 @@ export function listenToYatras(
 
 export async function saveYatra(yatraData: Omit<Yatra, "id" | "createdAt" | "updatedAt">): Promise<Yatra> {
   const now = new Date().toISOString();
-  const id = `yatra-${Date.now()}`;
+  const id = `yatra-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
   
   // Use currently authenticated user's UID as organizerId
   const currentUid = auth?.currentUser?.uid || yatraData.organizerId || "organizer";
@@ -394,8 +394,11 @@ export function listenToMembers(yatraId: string, callback: (members: Member[]) =
 }
 
 export async function saveMember(memberData: Omit<Member, "id" | "createdAt">): Promise<Member> {
+  if (!memberData.yatraId) {
+    throw new Error("yatraId is strictly required to save a member.");
+  }
   const now = new Date().toISOString();
-  const id = `m-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  const id = `m-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
   const newMember: Member = {
     ...memberData,
     id,
@@ -435,7 +438,7 @@ export async function updateMemberDetails(
     }
   }
   const existing = getLocal<Member>(LS_KEYS.MEMBERS, []);
-  const updated = existing.map((m) => (m.id === memberId ? { ...m, ...updates, updatedAt: now } : m));
+  const updated = existing.map((m) => (m.id === memberId && m.yatraId === yatraId ? { ...m, ...updates, updatedAt: now } : m));
   setLocal(LS_KEYS.MEMBERS, updated);
 }
 
@@ -458,12 +461,12 @@ export async function deleteMemberFromDb(yatraId: string, memberId: string): Pro
   const existing = getLocal<Member>(LS_KEYS.MEMBERS, []);
   setLocal(
     LS_KEYS.MEMBERS,
-    existing.filter((m) => m.id !== memberId)
+    existing.filter((m) => !(m.id === memberId && m.yatraId === yatraId))
   );
   const existingPayments = getLocal<Payment>(LS_KEYS.PAYMENTS, []);
   setLocal(
     LS_KEYS.PAYMENTS,
-    existingPayments.filter((p) => p.memberId !== memberId)
+    existingPayments.filter((p) => !(p.memberId === memberId && p.yatraId === yatraId))
   );
 }
 
@@ -508,8 +511,11 @@ export function listenToPayments(yatraId: string, callback: (payments: Payment[]
 }
 
 export async function savePayment(paymentData: Omit<Payment, "id" | "createdAt">): Promise<Payment> {
+  if (!paymentData.yatraId) {
+    throw new Error("yatraId is strictly required to save a payment.");
+  }
   const now = new Date().toISOString();
-  const id = `p-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  const id = `p-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
   const newPayment: Payment = {
     ...paymentData,
     id,
@@ -545,7 +551,7 @@ export async function deletePaymentFromDb(yatraId: string, paymentId: string): P
   const existing = getLocal<Payment>(LS_KEYS.PAYMENTS, []);
   setLocal(
     LS_KEYS.PAYMENTS,
-    existing.filter((p) => p.id !== paymentId)
+    existing.filter((p) => !(p.id === paymentId && p.yatraId === yatraId))
   );
 }
 
@@ -590,8 +596,11 @@ export function listenToExpenses(yatraId: string, callback: (expenses: Expense[]
 }
 
 export async function saveExpense(expenseData: Omit<Expense, "id" | "createdAt">): Promise<Expense> {
+  if (!expenseData.yatraId) {
+    throw new Error("yatraId is strictly required to save an expense.");
+  }
   const now = new Date().toISOString();
-  const id = `e-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  const id = `e-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
   const newExpense: Expense = {
     ...expenseData,
     id,
@@ -631,7 +640,7 @@ export async function updateExpenseDetails(
     }
   }
   const existing = getLocal<Expense>(LS_KEYS.EXPENSES, []);
-  const updated = existing.map((e) => (e.id === expenseId ? { ...e, ...updates, updatedAt: now } : e));
+  const updated = existing.map((e) => (e.id === expenseId && e.yatraId === yatraId ? { ...e, ...updates, updatedAt: now } : e));
   setLocal(LS_KEYS.EXPENSES, updated);
 }
 
@@ -646,7 +655,7 @@ export async function deleteExpenseFromDb(yatraId: string, expenseId: string): P
   const existing = getLocal<Expense>(LS_KEYS.EXPENSES, []);
   setLocal(
     LS_KEYS.EXPENSES,
-    existing.filter((e) => e.id !== expenseId)
+    existing.filter((e) => !(e.id === expenseId && e.yatraId === yatraId))
   );
 }
 
@@ -766,7 +775,7 @@ export async function removeSahayakFromDb(yatraId: string, sahayakUid: string): 
   const existing = getLocal<YatraStaff>(LS_KEYS.SAHAYAKS, []);
   setLocal(
     LS_KEYS.SAHAYAKS,
-    existing.filter((s) => s.id !== sahayakUid && s.uid !== sahayakUid)
+    existing.filter((s) => !((s.id === sahayakUid || s.uid === sahayakUid) && s.yatraId === yatraId))
   );
 }
 

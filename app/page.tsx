@@ -17,11 +17,13 @@ import { AddPaymentModal } from "@/components/payments/AddPaymentModal";
 import { AddExpenseModal } from "@/components/expenses/AddExpenseModal";
 import { AddMemberModal } from "@/components/members/AddMemberModal";
 import { CreateYatraModal } from "@/components/yatra/CreateYatraModal";
+import { SwitchEventModal } from "@/components/yatra/SwitchEventModal";
 import { YatraSettingsModal } from "@/components/yatra/YatraSettingsModal";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { PreviousEventBanner } from "@/components/common/PreviousEventBanner";
 import type { Member } from "@/types/yatra";
 import { canManageSahayaks } from "@/lib/permissions";
-import { Loader2, PlusCircle, Sparkles, MapPin, Calendar, IndianRupee, Flag } from "lucide-react";
+import { Loader2, PlusCircle, Sparkles, MapPin, Calendar, IndianRupee } from "lucide-react";
 
 export default function YatraApp() {
   const router = useRouter();
@@ -30,6 +32,7 @@ export default function YatraApp() {
     yatras,
     activeYatra,
     loading: dataLoading,
+    isSwitchingEvent,
     hasAccess,
     userRole,
     roleLoading,
@@ -51,8 +54,9 @@ export default function YatraApp() {
   const [preselectedMember, setPreselectedMember] = useState<Member | null>(null);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
-  const [isAddSahayaks, setIsAddSahayaks] = useState(false)
+  const [isAddSahayaks, setIsAddSahayaks] = useState(false);
   const [isCreateYatraOpen, setIsCreateYatraOpen] = useState(false);
+  const [isSwitchEventOpen, setIsSwitchEventOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
@@ -142,6 +146,7 @@ export default function YatraApp() {
           window.scrollTo({ top: 0, behavior: "smooth" });
         }}
         onCreateYatraClick={() => setIsCreateYatraOpen(true)}
+        onOpenSwitchEvent={() => setIsSwitchEventOpen(true)}
       />
 
       {/* Main Content Layout Container (Shifted right on desktop) */}
@@ -152,6 +157,8 @@ export default function YatraApp() {
           onAddExpense={() => setIsAddExpenseOpen(true)}
           onAddMember={() => setIsAddMemberOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenCreateEvent={() => setIsCreateYatraOpen(true)}
+          onOpenSwitchEvent={() => setIsSwitchEventOpen(true)}
         />
 
         {/* Dynamic Page Views */}
@@ -206,33 +213,49 @@ export default function YatraApp() {
             </div>
           ) : (
             <>
-              {activeTab === "dashboard" && (
-                <DashboardView
-                  onNavigate={(tab) => {
-                    setActiveTab(tab);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                  onAddPayment={handleOpenGeneralPayment}
-                  onAddExpense={() => setIsAddExpenseOpen(true)}
-                  onAddMember={() => setIsAddMemberOpen(true)}
-                />
+              {/* Previous Event Notice Banner */}
+              <PreviousEventBanner
+                onOpenSwitchEvent={() => setIsSwitchEventOpen(true)}
+                onOpenCreateEvent={() => setIsCreateYatraOpen(true)}
+              />
+
+              {/* Event Switching Loading Indicator */}
+              {isSwitchingEvent ? (
+                <div className="py-16 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 gap-3 animate-in fade-in duration-150">
+                  <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+                  <p className="text-sm font-bold">Loading event data...</p>
+                </div>
+              ) : (
+                <>
+                  {activeTab === "dashboard" && (
+                    <DashboardView
+                      onNavigate={(tab) => {
+                        setActiveTab(tab);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      onAddPayment={handleOpenGeneralPayment}
+                      onAddExpense={() => setIsAddExpenseOpen(true)}
+                      onAddMember={() => setIsAddMemberOpen(true)}
+                    />
+                  )}
+
+                  {activeTab === "members" && (
+                    <MembersView onAddPaymentForMember={handleOpenPaymentForMember} />
+                  )}
+
+                  {activeTab === "payments" && (
+                    <PaymentsView onAddPayment={handleOpenGeneralPayment} />
+                  )}
+
+                  {activeTab === "expenses" && (
+                    <ExpensesView onAddExpense={() => setIsAddExpenseOpen(true)} />
+                  )}
+
+                  {activeTab === "sahayaks" && <SahayaksView />}
+
+                  {activeTab === "report" && <ReportView />}
+                </>
               )}
-
-              {activeTab === "members" && (
-                <MembersView onAddPaymentForMember={handleOpenPaymentForMember} />
-              )}
-
-              {activeTab === "payments" && (
-                <PaymentsView onAddPayment={handleOpenGeneralPayment} />
-              )}
-
-              {activeTab === "expenses" && (
-                <ExpensesView onAddExpense={() => setIsAddExpenseOpen(true)} />
-              )}
-
-              {activeTab === "sahayaks" && <SahayaksView />}
-
-              {activeTab === "report" && <ReportView />}
             </>
           )}
         </main>
@@ -250,6 +273,8 @@ export default function YatraApp() {
           onAddExpense={() => setIsAddExpenseOpen(true)}
           onAddMember={() => setIsAddMemberOpen(true)}
           onAddSahayak={() => setIsAddSahayaks(true)}
+          onOpenCreateEvent={() => setIsCreateYatraOpen(true)}
+          onOpenSwitchEvent={() => setIsSwitchEventOpen(true)}
         />
       )}
 
@@ -284,6 +309,13 @@ export default function YatraApp() {
 
       {isCreateYatraOpen && (
         <CreateYatraModal onClose={() => setIsCreateYatraOpen(false)} />
+      )}
+
+      {isSwitchEventOpen && (
+        <SwitchEventModal
+          onClose={() => setIsSwitchEventOpen(false)}
+          onCreateNewEvent={() => setIsCreateYatraOpen(true)}
+        />
       )}
 
       {isSettingsOpen && (
