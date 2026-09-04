@@ -229,7 +229,7 @@ export function ExpensesView({ onAddExpense }: ExpensesViewProps) {
 
                 <div className="flex items-center gap-3">
                   <span className="text-base md:text-lg font-black text-orange-600 dark:text-orange-400">
-                    −{inr(e.amount)}
+                    {inr(e.amount)}
                   </span>
 
                   <div className="flex items-center gap-1">
