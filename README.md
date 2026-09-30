@@ -6,7 +6,7 @@ The application is designed to work for different types of group trips and event
 
 ## Features
 
-### 👥 Trip & Participant Management
+###  Trip & Participant Management
 
 * Create and manage trips
 * Add participants to a trip
@@ -14,7 +14,7 @@ The application is designed to work for different types of group trips and event
 * Track participant payment status
 * Manage participant contributions
 
-### 💳 Payment Management
+###  Payment Management
 
 * Record participant payments
 * Support partial payments
