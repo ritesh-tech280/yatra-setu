@@ -8,7 +8,7 @@ The application is designed to work for different types of group trips and event
 
 ###  Trip & Participant Management
 
-* Create and manage trips
+* Create and manage trips 
 * Add participants to a trip
 * Update participant information
 * Track participant payment status
