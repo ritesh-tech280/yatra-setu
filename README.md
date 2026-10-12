@@ -58,7 +58,7 @@ The application uses Firebase Authentication and supports role-based access.
 * Secure invitation-based access for co-organizers
 * Co-organizers use their own accounts instead of sharing the owner's login
 
-### ✉️ Co-organizer Invitations
+### Co-organizer Invitations
 
 An owner can select an existing participant and invite them to become a co-organizer.
 
