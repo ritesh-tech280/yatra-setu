@@ -29,8 +29,8 @@ export function SwitchEventModal({ onClose, onCreateNewEvent }: SwitchEventModal
     return yatras.filter((y) => {
       const matchesSearch =
         y.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        y.startPlace.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        y.destination.toLowerCase().includes(searchTerm.toLowerCase());
+        (y.startPlace || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (y.destination || y.venue || "").toLowerCase().includes(searchTerm.toLowerCase());
 
       if (!matchesSearch) return false;
 
@@ -194,13 +194,13 @@ export function SwitchEventModal({ onClose, onCreateNewEvent }: SwitchEventModal
                       <div className="flex items-center gap-1">
                         <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                         <span>
-                          {yatra.startPlace} ➔ {yatra.destination}
+                          {yatra.type === "event" ? yatra.venue : `${yatra.startPlace} ➔ ${yatra.destination}`}
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         <span>
-                          {yatra.startDate} to {yatra.endDate}
+                          {yatra.startDate}{yatra.type === "event" || yatra.startDate === yatra.endDate ? "" : ` to ${yatra.endDate}`}
                         </span>
                       </div>
                       <div className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">

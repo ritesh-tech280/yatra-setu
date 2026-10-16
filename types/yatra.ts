@@ -38,9 +38,11 @@ export type ExpenseCategory =
 
 export interface Yatra {
   id: string;
+  type?: "trip" | "event";
   name: string;
   startPlace: string;
   destination: string;
+  venue?: string;
   startDate: string;
   endDate: string;
   fare: number;

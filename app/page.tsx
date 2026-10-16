@@ -56,9 +56,14 @@ export default function YatraApp() {
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [isAddSahayaks, setIsAddSahayaks] = useState(false);
   const [isCreateYatraOpen, setIsCreateYatraOpen] = useState(false);
+  const [createYatraType, setCreateYatraType] = useState<"trip" | "event">("trip");
   const [isSwitchEventOpen, setIsSwitchEventOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const openCreateYatra = (type: "trip" | "event") => {
+    setCreateYatraType(type);
+    setIsCreateYatraOpen(true);
+  };
 
   // Redirect to login if unauthenticated
   useEffect(() => {
@@ -129,6 +134,7 @@ export default function YatraApp() {
 
         {isCreateYatraOpen && (
           <CreateYatraModal
+            type={createYatraType}
             onClose={() => setIsCreateYatraOpen(false)}
           />
         )}
@@ -145,7 +151,7 @@ export default function YatraApp() {
           setActiveTab(tab);
           window.scrollTo({ top: 0, behavior: "smooth" });
         }}
-        onCreateYatraClick={() => setIsCreateYatraOpen(true)}
+        onCreateYatraClick={() => openCreateYatra("event")}
         onOpenSwitchEvent={() => setIsSwitchEventOpen(true)}
       />
 
@@ -157,7 +163,8 @@ export default function YatraApp() {
           onAddExpense={() => setIsAddExpenseOpen(true)}
           onAddMember={() => setIsAddMemberOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
-          onOpenCreateEvent={() => setIsCreateYatraOpen(true)}
+          onOpenCreateEvent={() => openCreateYatra("event")}
+          onOpenCreateTrip={() => openCreateYatra("trip")}
           onOpenSwitchEvent={() => setIsSwitchEventOpen(true)}
         />
 
@@ -203,7 +210,7 @@ export default function YatraApp() {
 
                 <button
                   type="button"
-                  onClick={() => setIsCreateYatraOpen(true)}
+                  onClick={() => openCreateYatra("trip")}
                   className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/25 active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <PlusCircle className="w-5 h-5" />
@@ -216,7 +223,7 @@ export default function YatraApp() {
               {/* Previous Event Notice Banner */}
               <PreviousEventBanner
                 onOpenSwitchEvent={() => setIsSwitchEventOpen(true)}
-                onOpenCreateEvent={() => setIsCreateYatraOpen(true)}
+                onOpenCreateEvent={() => openCreateYatra("event")}
               />
 
               {/* Event Switching Loading Indicator */}
@@ -273,7 +280,7 @@ export default function YatraApp() {
           onAddExpense={() => setIsAddExpenseOpen(true)}
           onAddMember={() => setIsAddMemberOpen(true)}
           onAddSahayak={() => setIsAddSahayaks(true)}
-          onOpenCreateEvent={() => setIsCreateYatraOpen(true)}
+          onOpenCreateEvent={() => openCreateYatra("event")}
           onOpenSwitchEvent={() => setIsSwitchEventOpen(true)}
         />
       )}
@@ -308,13 +315,13 @@ export default function YatraApp() {
       )}
 
       {isCreateYatraOpen && (
-        <CreateYatraModal onClose={() => setIsCreateYatraOpen(false)} />
+        <CreateYatraModal type={createYatraType} onClose={() => setIsCreateYatraOpen(false)} />
       )}
 
       {isSwitchEventOpen && (
         <SwitchEventModal
           onClose={() => setIsSwitchEventOpen(false)}
-          onCreateNewEvent={() => setIsCreateYatraOpen(true)}
+          onCreateNewEvent={() => openCreateYatra("event")}
         />
       )}
 

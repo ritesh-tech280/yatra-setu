@@ -102,9 +102,11 @@ export async function createDbYatra(data: Partial<Yatra>): Promise<Yatra> {
   const now = new Date().toISOString();
   const yatra: Yatra = {
     id: newId,
+    type: data.type || "trip",
     name: data.name || "My Yatra",
     startPlace: data.startPlace || "",
     destination: data.destination || "",
+    venue: data.venue || "",
     startDate: data.startDate || now.split("T")[0],
     endDate: data.endDate || now.split("T")[0],
     fare: Number(data.fare) || 0,

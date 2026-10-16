@@ -376,7 +376,7 @@ export function YatraProvider({ children }: { children: React.ReactNode }) {
     const newYatra = await saveYatra({
       ...data,
       organizerId: currentUid,
-      organizerName: currentName,
+      organizerName: data.organizerName || currentName,
     });
 
     setYatras((prev) => [newYatra, ...prev.filter((y) => y.id !== newYatra.id)]);
