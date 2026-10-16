@@ -17,6 +17,7 @@ import {
   Building,
   Gift,
   Users,
+  ChevronDown,
 } from "lucide-react";
 import { useYatraData } from "@/context/YatraContext";
 import { inr, getMemberBalance, getCategoryTotals, getPaymentMethodTotals } from "@/lib/calculations";
@@ -29,6 +30,9 @@ export function ReportView() {
   const { activeYatra, members, payments, expenses, summary } = useYatraData();
   const { toast } = useToast();
   const [downloading, setDownloading] = useState(false);
+  const [expandedExpenseCategories, setExpandedExpenseCategories] = useState<Set<string>>(
+    () => new Set()
+  );
 
   const fare = activeYatra?.fare || 0;
   const categoryTotals = useMemo(() => getCategoryTotals(expenses), [expenses]);
@@ -37,11 +41,23 @@ export function ReportView() {
     () => payments.filter((p) => p.isContribution || !p.memberId),
     [payments]
   );
+  const expensesByCategory = useMemo(() => {
+    const grouped = new Map<string, typeof expenses>();
+    for (const expense of expenses) {
+      const category = expense.category || "Other";
+      grouped.set(category, [...(grouped.get(category) || []), expense]);
+    }
+    return grouped;
+  }, [expenses]);
 
   const handleDownloadPdf = async () => {
     setDownloading(true);
     toast("Generating PDF report...", "info");
+    const previouslyExpanded = expandedExpenseCategories;
     try {
+      setExpandedExpenseCategories(new Set(categoryTotals.map(({ category }) => category)));
+      // Let React render every entry before html2canvas captures the report.
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       const fileName = `${(activeYatra?.name || "yatra").toLowerCase().replace(/\s+/g, "-")}-financial-report.pdf`;
       const success = await generatePdfFromElement("yatra-final-report", fileName);
       if (success) {
@@ -50,6 +66,7 @@ export function ReportView() {
         toast("Could not download PDF. You can also use Print Report -> Save as PDF.", "warning");
       }
     } finally {
+      setExpandedExpenseCategories(previouslyExpanded);
       setDownloading(false);
     }
   };
@@ -363,15 +380,62 @@ export function ReportView() {
             </h3>
 
             <div className="space-y-2.5 text-xs">
-              {categoryTotals.map((ct) => (
-                <div key={ct.category} className="flex items-center justify-between py-1 border-b border-slate-50">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-slate-800">{ct.category}</span>
-                    <span className="text-[10px] text-slate-400">({ct.count} entries)</span>
+              {categoryTotals.map((ct) => {
+                const categoryExpenses = expensesByCategory.get(ct.category) || [];
+                const isExpanded = expandedExpenseCategories.has(ct.category);
+                return (
+                  <div key={ct.category} className="border-b border-slate-100">
+                    <button
+                      type="button"
+                      aria-expanded={isExpanded}
+                      onClick={() => setExpandedExpenseCategories((current) => {
+                        const next = new Set(current);
+                        if (next.has(ct.category)) next.delete(ct.category);
+                        else next.add(ct.category);
+                        return next;
+                      })}
+                      className="flex w-full items-center justify-between gap-3 py-2 text-left cursor-pointer"
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform ${isExpanded ? "" : "-rotate-90"}`} />
+                        <span className="font-semibold text-slate-800">{ct.category}</span>
+                        <span className="text-[10px] text-slate-400">({ct.count} entries)</span>
+                      </span>
+                      <span className="shrink-0 font-black text-slate-900">{inr(ct.total)}</span>
+                    </button>
+                    {isExpanded && (
+                      <div className="mb-2 overflow-x-auto rounded-lg bg-slate-50">
+                        <table className="w-full min-w-120 text-left text-[11px]">
+                          <thead className="text-[10px] uppercase tracking-wide text-slate-500">
+                            <tr>
+                              <th className="px-3 py-2 font-bold">Date</th>
+                              <th className="px-3 py-2 font-bold">Description</th>
+                              <th className="px-3 py-2 font-bold">Paid by</th>
+                              <th className="px-3 py-2 text-right font-bold">Amount</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200">
+                            {categoryExpenses.map((expense) => (
+                              <tr key={expense.id}>
+                                <td className="px-3 py-2 text-slate-600">{formatDate(expense.expenseDate)}</td>
+                                <td className="px-3 py-2 text-slate-700">{expense.description || "—"}</td>
+                                <td className="px-3 py-2 text-slate-600">{expense.paidBy || "—"}</td>
+                                <td className="px-3 py-2 text-right font-bold text-slate-800">{inr(expense.amount)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot>
+                            <tr className="border-t border-slate-200 font-bold text-slate-800">
+                              <td colSpan={3} className="px-3 py-2 text-right">{ct.category} subtotal</td>
+                              <td className="px-3 py-2 text-right">{inr(ct.total)}</td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    )}
                   </div>
-                  <span className="font-black text-slate-900">{inr(ct.total)}</span>
-                </div>
-              ))}
+                );
+              })}
               <div className="flex items-center justify-between pt-2 border-t-2 border-slate-900 font-black text-sm text-orange-800">
                 <span>Total Group Expenses:</span>
                 <span>{inr(summary.expenses)}</span>
