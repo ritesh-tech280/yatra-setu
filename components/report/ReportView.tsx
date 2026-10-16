@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Printer,
   Download,
@@ -33,6 +33,11 @@ export function ReportView() {
   const [expandedExpenseCategories, setExpandedExpenseCategories] = useState<Set<string>>(
     () => new Set()
   );
+  const [reportType, setReportType] = useState<"trip" | "event">(activeYatra?.type === "event" ? "event" : "trip");
+
+  useEffect(() => {
+    setReportType(activeYatra?.type === "event" ? "event" : "trip");
+  }, [activeYatra?.id, activeYatra?.type]);
 
   const fare = activeYatra?.fare || 0;
   const categoryTotals = useMemo(() => getCategoryTotals(expenses), [expenses]);
@@ -58,7 +63,7 @@ export function ReportView() {
       setExpandedExpenseCategories(new Set(categoryTotals.map(({ category }) => category)));
       // Let React render every entry before html2canvas captures the report.
       await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-      const fileName = `${(activeYatra?.name || "yatra").toLowerCase().replace(/\s+/g, "-")}-financial-report.pdf`;
+      const fileName = `${(activeYatra?.name || "yatra").toLowerCase().replace(/\s+/g, "-")}-${reportType}-financial-report.pdf`;
       const success = await generatePdfFromElement("yatra-final-report", fileName);
       if (success) {
         toast("PDF downloaded successfully!", "success");
@@ -82,7 +87,7 @@ export function ReportView() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white">
-              Final Financial Audit Report
+              {reportType === "event" ? "Event Financial Report" : "Trip Financial Audit Report"}
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">
               Official Audit
@@ -93,7 +98,11 @@ export function ReportView() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center rounded-xl bg-slate-100 dark:bg-slate-800 p-1" role="group" aria-label="Report type">
+            <button type="button" onClick={() => setReportType("trip")} aria-pressed={reportType === "trip"} className={`rounded-lg px-3 py-2 text-xs font-bold transition ${reportType === "trip" ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white" : "text-slate-500 dark:text-slate-400"}`}>Trip Report</button>
+            <button type="button" onClick={() => setReportType("event")} aria-pressed={reportType === "event"} className={`rounded-lg px-3 py-2 text-xs font-bold transition ${reportType === "event" ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white" : "text-slate-500 dark:text-slate-400"}`}>Event Report</button>
+          </div>
           <button
             onClick={handleDownloadPdf}
             disabled={downloading}
@@ -123,7 +132,7 @@ export function ReportView() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-black uppercase tracking-wider mb-2">
-                <span>Official Financial Audit Ledger</span>
+                <span>{reportType === "event" ? "Official Event Financial Report" : "Official Trip Financial Audit Ledger"}</span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-black text-slate-950 uppercase tracking-tight">
                 {activeYatra?.name || "Yatra Group"}
@@ -131,12 +140,16 @@ export function ReportView() {
               <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-600 mt-2">
                 <span className="flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Route: {activeYatra?.startPlace} ➔ {activeYatra?.destination}</span>
+                  {reportType === "event" ? (
+                    <span>Venue: {activeYatra?.venue || activeYatra?.destination || "—"}</span>
+                  ) : (
+                    <span>Route: {activeYatra?.startPlace} ➔ {activeYatra?.destination}</span>
+                  )}
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Dates: {activeYatra?.startDate} to {activeYatra?.endDate}</span>
+                  <span>{reportType === "event" ? "Date" : "Dates"}: {activeYatra?.startDate}{reportType === "event" || activeYatra?.startDate === activeYatra?.endDate ? "" : ` to ${activeYatra?.endDate}`}</span>
                 </span>
                 <span>•</span>
                 <span>Organizer: <strong>{activeYatra?.organizerName}</strong></span>
@@ -225,7 +238,7 @@ export function ReportView() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
-              2. Payment Ledger ({summary.totalMembers})
+              {reportType === "event" ? "2. Event Participant Payment Ledger" : "2. Trip Payment Ledger"} ({summary.totalMembers})
             </h3>
             <span className="text-xs font-bold text-slate-600">
               Fully Paid: {summary.full} • Partial: {summary.partial} • Pending: {summary.pending}
@@ -376,7 +389,7 @@ export function ReportView() {
           <div className="border border-slate-200 rounded-2xl p-5 space-y-4">
             <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5 border-b border-slate-100 pb-2">
               <Receipt className="w-4 h-4 text-orange-600" />
-              <span>4. Expense Breakdown by Category</span>
+              <span>{reportType === "event" ? "4. Event Expense Breakdown" : "4. Trip Expense Breakdown by Category"}</span>
             </h3>
 
             <div className="space-y-2.5 text-xs">

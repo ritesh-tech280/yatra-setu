@@ -27,6 +27,7 @@ interface HeaderProps {
   onAddMember: () => void;
   onOpenSettings: () => void;
   onOpenCreateEvent: () => void;
+  onOpenCreateTrip: () => void;
   onOpenSwitchEvent: () => void;
 }
 
@@ -36,6 +37,7 @@ export function Header({
   onAddMember,
   onOpenSettings,
   onOpenCreateEvent,
+  onOpenCreateTrip,
   onOpenSwitchEvent,
 }: HeaderProps) {
   const { user, logout } = useAuth();
@@ -95,7 +97,7 @@ export function Header({
               {activeYatra && (
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:flex items-center gap-2 mt-0.5">
                   <span>
-                    {activeYatra.startPlace} ➔ {activeYatra.destination}
+                    {activeYatra.type === "event" ? activeYatra.venue : `${activeYatra.startPlace} ➔ ${activeYatra.destination}`}
                   </span>
                   <span>•</span>
                   <span>
@@ -182,7 +184,7 @@ export function Header({
                           </span>
                         </div>
                         <p className="text-[10px] text-slate-400 truncate mt-0.5">
-                          {y.startPlace} ➔ {y.destination}
+                          {y.type === "event" ? y.venue || "Event" : `${y.startPlace} ➔ ${y.destination}`}
                         </p>
                       </div>
 
@@ -226,16 +228,16 @@ export function Header({
           <span className="hidden sm:inline">Switch Event</span>
         </button>
 
-        {/* Create Event Quick Button for Organizer */}
+        {/* Create Trip and Event Quick Buttons for Organizer */}
         {isOrganizer && (
-          <button
-            type="button"
-            onClick={onOpenCreateEvent}
-            className="hidden md:flex items-center gap-1.5 py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-slate-950 text-xs font-extrabold shadow-sm transition cursor-pointer"
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>+ New Event</span>
-          </button>
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={onOpenCreateTrip} title="Create new trip" aria-label="Create new trip" className="flex items-center gap-1 sm:gap-1.5 py-2 px-2 sm:px-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-extrabold transition cursor-pointer">
+              <PlusCircle className="w-3.5 h-3.5" /><span className="hidden sm:inline">New Trip</span>
+            </button>
+            <button type="button" onClick={onOpenCreateEvent} title="Create new event" aria-label="Create new event" className="flex items-center gap-1 sm:gap-1.5 py-2 px-2 sm:px-3 rounded-xl bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-slate-950 text-xs font-extrabold shadow-sm transition cursor-pointer">
+              <PlusCircle className="w-3.5 h-3.5" /><span className="hidden sm:inline">New Event</span>
+            </button>
+          </div>
         )}
 
         {/* Quick Add Buttons */}

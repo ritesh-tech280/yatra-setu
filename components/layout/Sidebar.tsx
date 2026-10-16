@@ -137,13 +137,13 @@ export function Sidebar({
               <div className="flex items-center gap-1.5 text-slate-300">
                 <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 <span className="truncate">
-                  {activeYatra.startPlace} ➔ {activeYatra.destination}
+                  {activeYatra.type === "event" ? activeYatra.venue : `${activeYatra.startPlace} ➔ ${activeYatra.destination}`}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                 <span>
-                  {activeYatra.startDate} — {activeYatra.endDate}
+                  {activeYatra.startDate}{activeYatra.type === "event" || activeYatra.startDate === activeYatra.endDate ? "" : ` — ${activeYatra.endDate}`}
                 </span>
               </div>
             </div>
